@@ -1,0 +1,3 @@
+- Open PRs from feature branches; CI must be green before merge.
+- On merge to main, Render auto-deploy (configured in provider).
+- Secrets live in provider dashboards, not in repo.

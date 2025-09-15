@@ -34,3 +34,5 @@
    ```bash
    cd backend (if not in the backend folder)
    python app.py
+
+Find a ttached postman collection and environment for api testing and backend intergration to the frontend

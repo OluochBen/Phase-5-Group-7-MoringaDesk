@@ -1,12 +1,7 @@
-from flask import Flask
+from app import create_app, db
+from app.models import User  
 
-def create_app():
-    app = Flask(__name__)
+app = create_app()
 
-    # Simple test route to confirm the app is running
-    @app.route('/')
-    def home():
-        return {"message": "MoringaDesk Backend is running!"}
-
-    return app
-
+with app.app_context():
+    db.create_all()

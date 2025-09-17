@@ -1,0 +1,993 @@
+{
+	"info": {
+		"_postman_id": "moringadesk-api-collection",
+		"name": "MoringaDesk API",
+		"description": "Complete API collection for MoringaDesk backend - a platform for students to ask questions and get solutions",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "moringadesk-api"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"student\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@moringadesk.com\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login user and get access token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Get current authenticated user information"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for user registration, login, and profile management"
+		},
+		{
+			"name": "Problems/Questions",
+			"item": [
+				{
+					"name": "Get All Problems",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/problems?page=1&per_page=10&problem_type=technical&search=python",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "per_page",
+									"value": "10",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "problem_type",
+									"value": "technical",
+									"description": "Filter by problem type (language, stage, technical, logical)"
+								},
+								{
+									"key": "search",
+									"value": "python",
+									"description": "Search term for title and description"
+								}
+							]
+						},
+						"description": "Get paginated list of problems with optional filtering"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Problem",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"How to debug Python code effectively?\",\n  \"description\": \"I'm having trouble debugging my Python code. What are the best practices and tools I should use?\",\n  \"problem_type\": \"technical\",\n  \"tag_ids\": [1, 2, 3]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/problems",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems"
+							]
+						},
+						"description": "Create a new problem/question"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Problem",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/problems/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems",
+								"1"
+							]
+						},
+						"description": "Get a single problem with related problems"
+					},
+					"response": []
+				},
+				{
+					"name": "Follow Problem",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/problems/1/follow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems",
+								"1",
+								"follow"
+							]
+						},
+						"description": "Follow a problem to get notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Unfollow Problem",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/problems/1/follow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems",
+								"1",
+								"follow"
+							]
+						},
+						"description": "Unfollow a problem"
+					},
+					"response": []
+				},
+				{
+					"name": "Link Related Problems",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/problems/1/related/2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems",
+								"1",
+								"related",
+								"2"
+							]
+						},
+						"description": "Link two problems as related"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Problem Solutions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/problems/1/solutions?page=1&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems",
+								"1",
+								"solutions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get solutions for a specific problem"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Problem Solution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Here are some effective debugging techniques for Python:\\n\\n1. Use print statements strategically\\n2. Use the Python debugger (pdb)\\n3. Use logging instead of print\\n4. Use IDE debuggers like VS Code or PyCharm\\n5. Read error messages carefully\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/problems/1/solutions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"problems",
+								"1",
+								"solutions"
+							]
+						},
+						"description": "Create a solution for a problem"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing problems/questions"
+		},
+		{
+			"name": "Solutions",
+			"item": [
+				{
+					"name": "Get Single Solution",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/solutions/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"solutions",
+								"1"
+							]
+						},
+						"description": "Get a single solution by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Vote Solution (Upvote)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vote_type\": \"up\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/solutions/1/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"solutions",
+								"1",
+								"vote"
+							]
+						},
+						"description": "Vote up on a solution"
+					},
+					"response": []
+				},
+				{
+					"name": "Vote Solution (Downvote)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vote_type\": \"down\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/solutions/1/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"solutions",
+								"1",
+								"vote"
+							]
+						},
+						"description": "Vote down on a solution"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Vote",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/solutions/1/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"solutions",
+								"1",
+								"vote"
+							]
+						},
+						"description": "Remove vote from a solution"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Solution Votes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/solutions/1/votes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"solutions",
+								"1",
+								"votes"
+							]
+						},
+						"description": "Get all votes for a solution"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing solutions and voting"
+		},
+		{
+			"name": "FAQs",
+			"item": [
+				{
+					"name": "Get All FAQs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/faqs?page=1&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"faqs"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get paginated list of FAQs"
+					},
+					"response": []
+				},
+				{
+					"name": "Create FAQ",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"What is the difference between Python 2 and Python 3?\",\n  \"answer\": \"Python 2 and Python 3 are different versions of the Python programming language. Python 3 introduced many improvements including better Unicode support, cleaner syntax, and enhanced performance. Python 2 reached end-of-life in 2020.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/faqs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"faqs"
+							]
+						},
+						"description": "Create a new FAQ"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single FAQ",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/faqs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"faqs",
+								"1"
+							]
+						},
+						"description": "Get a single FAQ by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update FAQ",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"Updated: What is the difference between Python 2 and Python 3?\",\n  \"answer\": \"Updated answer with more detailed information about Python 2 vs Python 3 differences.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/faqs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"faqs",
+								"1"
+							]
+						},
+						"description": "Update an existing FAQ"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete FAQ",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/faqs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"faqs",
+								"1"
+							]
+						},
+						"description": "Delete an FAQ"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing Frequently Asked Questions"
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get User Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications?page=1&per_page=10&unread_only=false",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "unread_only",
+									"value": "false",
+									"description": "Filter to show only unread notifications"
+								}
+							]
+						},
+						"description": "Get user notifications with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications/unread-count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"unread-count"
+							]
+						},
+						"description": "Get count of unread notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications/1/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"1",
+								"read"
+							]
+						},
+						"description": "Mark a specific notification as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All Notifications as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications/read-all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"read-all"
+							]
+						},
+						"description": "Mark all notifications as read"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing user notifications"
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users?page=1&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get all users (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"2"
+							]
+						},
+						"description": "Update user role (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"2"
+							]
+						},
+						"description": "Delete a user (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Questions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/questions?page=1&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"questions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get all questions (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Question",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/questions/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"questions",
+								"1"
+							]
+						},
+						"description": "Delete a question (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Solution",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/solutions/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"solutions",
+								"1"
+							]
+						},
+						"description": "Delete a solution (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reports Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/reports/summary",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reports",
+								"summary"
+							]
+						},
+						"description": "Get summary reports (admin only)"
+					},
+					"response": []
+				}
+			],
+			"description": "Admin-only endpoints for user and content management"
+		},
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Ping",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ping",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ping"
+							]
+						},
+						"description": "Health check endpoint"
+					},
+					"response": []
+				}
+			],
+			"description": "Health check and system status endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_access_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

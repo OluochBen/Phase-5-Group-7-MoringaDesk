@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,7 +14,17 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
+    CORS(app)
 
-    from . import models  
+    from . import models 
+
+    @app.route('/')
+    def index():
+        return 'Backend Testing!' 
+    
+    from app.routes.users import users_bp
+    app.register_blueprint(users_bp)
+
+    app.register_blueprint(users_bp)
 
     return app

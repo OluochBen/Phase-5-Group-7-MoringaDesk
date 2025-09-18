@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "./utils";
+import { cn } from "./utils.js";
 
 function Input({ className, type, ...props }) {
   return (

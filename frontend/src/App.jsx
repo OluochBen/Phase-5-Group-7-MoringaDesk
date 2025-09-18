@@ -18,7 +18,7 @@ import {
   mockQuestions,
   mockUsers,
   mockNotifications,
-} from "./data/mockData";
+} from "./data/mockData.js";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);

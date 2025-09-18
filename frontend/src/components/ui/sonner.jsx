@@ -1,14 +1,28 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import { Toaster as Sonner } from "sonner";
 
+// Custom hook to get/set theme
+function useTheme() {
+  const [theme, setTheme] = useState(
+    localStorage.getItem("theme") || "light"
+  );
+
+  useEffect(() => {
+    document.documentElement.className = theme; // Applies Tailwind dark/light classes
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  return { theme, setTheme };
+}
+
 const Toaster = (props) => {
-  const { theme = "system" } = useTheme();
+  const { theme } = useTheme();
 
   return (
     <Sonner
-      theme={theme}
+      theme={theme} // 'light' or 'dark'
       className="toaster group"
       style={{
         "--normal-bg": "var(--popover)",

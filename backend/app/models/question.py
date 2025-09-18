@@ -1,19 +1,3 @@
-<<<<<<< HEAD
-# app/models/questions.py
-
-from app import db
-
-class Question(db.Model):
-    __tablename__ = 'questions'
-
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, nullable=False)
-
-    # Relationship to answers
-    answers = db.relationship('Answer', backref='question', cascade='all, delete-orphan')
-=======
 from app import db
 from datetime import datetime
 
@@ -65,4 +49,3 @@ class Question(db.Model):
         for solution in self.solutions:
             total_votes += solution.get_vote_count()
         return total_votes
->>>>>>> origin/jgithu-backend

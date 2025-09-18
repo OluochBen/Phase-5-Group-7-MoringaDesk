@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-from .question import Question
-from .answer import Answer
-=======
 from .user import User
 from .question import Question
 from .solution import Solution
@@ -14,9 +10,10 @@ from .notification import Notification
 from .faq import FAQ
 from .password_reset_token import PasswordResetToken
 
+
+
 __all__ = [
     'User', 'Question', 'Solution', 'Vote', 'Tag', 
     'QuestionTag', 'RelatedQuestion', 'Follow', 
     'Notification', 'FAQ', 'PasswordResetToken'
 ]
->>>>>>> origin/jgithu-backend

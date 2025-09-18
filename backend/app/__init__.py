@@ -14,7 +14,8 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+    
 
     from . import models 
 
@@ -24,7 +25,14 @@ def create_app():
     
     from app.routes.users import users_bp
     app.register_blueprint(users_bp)
+    
+    from app.routes.questions import questions_bp 
+    app.register_blueprint(questions_bp)
 
-    app.register_blueprint(users_bp)
+    from app.routes.answers import answers_bp
+    app.register_blueprint(answers_bp)
+
+
+
 
     return app

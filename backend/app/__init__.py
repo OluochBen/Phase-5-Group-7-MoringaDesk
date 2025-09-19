@@ -25,6 +25,7 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
+    from app import models
     migrate.init_app(app, db)
     jwt.init_app(app)
     CORS(app)

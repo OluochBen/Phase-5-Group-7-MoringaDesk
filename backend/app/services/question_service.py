@@ -1,6 +1,6 @@
-from app import db
-from app.models import Question, Tag, QuestionTag, RelatedQuestion, Follow, Notification
-from app.schemas import QuestionCreateSchema
+from .. import db
+from ..models import Question, Tag, QuestionTag, RelatedQuestion, Follow, Notification
+from ..schemas import QuestionCreateSchema
 from marshmallow import ValidationError
 
 class QuestionService:

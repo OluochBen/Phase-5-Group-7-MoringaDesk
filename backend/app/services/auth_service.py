@@ -1,6 +1,6 @@
-from app import db
-from app.models import User
-from app.schemas import UserRegistrationSchema, UserLoginSchema
+from .. import db
+from ..models import User
+from ..schemas import UserRegistrationSchema, UserLoginSchema
 from flask_jwt_extended import create_access_token
 from marshmallow import ValidationError
 

@@ -1,5 +1,6 @@
 # app/helpers/crud.py
-from app.models import db, User, Question, Solution, Vote, Tag, Follow, Notification, FAQ, LinkedQuestion, Report, AuditLog
+from .. import db
+from ..models import db, User, Question, Solution, Vote, Tag, Follow, Notification, FAQ, LinkedQuestion, Report, AuditLog
 from sqlalchemy import func
 from typing import List, Optional
 

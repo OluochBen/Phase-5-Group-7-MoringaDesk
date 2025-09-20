@@ -1,4 +1,4 @@
-from app.helpers.crud import create_notification
+from .crud import create_notification
 
 def notify_new_answer(db, question_owner_id, solution_id):
     return create_notification(

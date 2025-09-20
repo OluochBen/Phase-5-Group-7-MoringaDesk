@@ -1,6 +1,6 @@
-from app import db
-from app.models import Vote, Solution, Notification
-from app.schemas import VoteCreateSchema
+from .. import db
+from ..models import Vote, Solution, Notification
+from ..schemas import VoteCreateSchema
 from marshmallow import ValidationError
 
 class VoteService:

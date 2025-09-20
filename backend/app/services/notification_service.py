@@ -1,5 +1,5 @@
-from app import db
-from app.models import Notification
+from .. import db
+from ..models import Notification
 
 class NotificationService:
     @staticmethod

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.services import FAQService
+from ..services import FAQService
 
 faqs_bp = Blueprint('faqs', __name__)
 

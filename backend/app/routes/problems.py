@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.services import QuestionService
+from ..services import QuestionService
 
 problems_bp = Blueprint('problems', __name__)
 
@@ -63,7 +63,7 @@ def get_problem_solutions(question_id):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     
-    from app.services import SolutionService
+    from ..services import SolutionService
     result, status_code = SolutionService.get_solutions_by_question(question_id, page, per_page)
     return jsonify(result), status_code
 
@@ -74,6 +74,6 @@ def create_problem_solution(question_id):
     user_id = get_jwt_identity()
     data = request.get_json()
     
-    from app.services import SolutionService
+    from ..services import SolutionService
     result, status_code = SolutionService.create_solution(question_id, data, user_id)
     return jsonify(result), status_code

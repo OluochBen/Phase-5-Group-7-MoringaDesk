@@ -1,4 +1,4 @@
-from app import db
+from .. import db
 
 class QuestionTag(db.Model):
     __tablename__ = 'question_tags'

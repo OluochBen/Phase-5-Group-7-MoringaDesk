@@ -1,6 +1,6 @@
-from app import db
-from app.models import Solution, Question, Follow, Notification
-from app.schemas import SolutionCreateSchema
+from .. import db
+from ..models import Solution, Question, Follow, Notification
+from ..schemas import SolutionCreateSchema
 from marshmallow import ValidationError
 
 class SolutionService:

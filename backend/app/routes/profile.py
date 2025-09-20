@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 from sqlalchemy.orm import joinedload
-from app.models import User
-from app.utils import error_response  # Optional helper for consistent errors
+from ..models import User
+from ..utils import error_response  # Optional helper for consistent errors
 
 profile_bp = Blueprint('profile', __name__)
 

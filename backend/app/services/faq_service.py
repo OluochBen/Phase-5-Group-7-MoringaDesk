@@ -1,6 +1,6 @@
-from app import db
-from app.models import FAQ
-from app.schemas import FAQCreateSchema
+from .. import db
+from ..models import FAQ
+from ..schemas import FAQCreateSchema
 from marshmallow import ValidationError
 
 class FAQService:

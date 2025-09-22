@@ -1,27 +1,24 @@
-import React, { useState } from 'react';
-import { Search, Bell, User, LogOut, Home, Shield, Plus, HelpCircle } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, Bell, User, LogOut, Home, Shield, Plus, HelpCircle } from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { NewQuestionForm } from './NewQuestionForm';
+} from "./ui/dropdown-menu";
 
 export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifications }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showNewQuestion, setShowNewQuestion] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Implement search functionality
-    console.log('Searching for:', searchQuery);
+    console.log("Searching for:", searchQuery);
   };
 
   return (
@@ -31,7 +28,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
           {/* Logo */}
           <div className="flex items-center">
             <button
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => onNavigate("dashboard")}
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
             >
               <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
@@ -44,7 +41,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
           {/* Search Bar */}
           <div className="flex-1 max-w-lg mx-8">
             <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search questions, tags, or users..."
@@ -55,29 +52,21 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
             </form>
           </div>
 
-          {/* Navigation Items */}
+          {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* New Question Button */}
-            <Dialog open={showNewQuestion} onOpenChange={setShowNewQuestion}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="hidden sm:flex items-center space-x-2">
-                  <Plus className="w-4 h-4" />
-                  <span>Ask Question</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Ask a New Question</DialogTitle>
-                </DialogHeader>
-                <NewQuestionForm onClose={() => setShowNewQuestion(false)} />
-              </DialogContent>
-            </Dialog>
+            {/* Ask Question -> route to /ask */}
+            <Link to="/ask" className="hidden sm:block">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <Plus className="w-4 h-4" />
+                <span>Ask Question</span>
+              </Button>
+            </Link>
 
             {/* Navigation Buttons */}
             <Button
-              variant={currentScreen === 'dashboard' ? 'default' : 'ghost'}
+              variant={currentScreen === "dashboard" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => onNavigate("dashboard")}
               className="hidden sm:flex items-center space-x-1"
             >
               <Home className="w-4 h-4" />
@@ -85,20 +74,20 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
             </Button>
 
             <Button
-              variant={currentScreen === 'faq' ? 'default' : 'ghost'}
+              variant={currentScreen === "faq" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onNavigate('faq')}
+              onClick={() => onNavigate("faq")}
               className="hidden sm:flex items-center space-x-1"
             >
               <HelpCircle className="w-4 h-4" />
               <span>FAQ</span>
             </Button>
 
-            {user.role === 'admin' && (
+            {user.role === "admin" && (
               <Button
-                variant={currentScreen === 'admin' ? 'default' : 'ghost'}
+                variant={currentScreen === "admin" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => onNavigate('admin')}
+                onClick={() => onNavigate("admin")}
                 className="hidden sm:flex items-center space-x-1"
               >
                 <Shield className="w-4 h-4" />
@@ -108,9 +97,9 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
 
             {/* Notifications */}
             <Button
-              variant={currentScreen === 'notifications' ? 'default' : 'ghost'}
+              variant={currentScreen === "notifications" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onNavigate('notifications')}
+              onClick={() => onNavigate("notifications")}
               className="relative"
             >
               <Bell className="w-4 h-4" />
@@ -119,7 +108,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
                   variant="destructive"
                   className="absolute -top-2 -right-2 w-5 h-5 rounded-full p-0 flex items-center justify-center text-xs"
                 >
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
                 </Badge>
               )}
             </Button>
@@ -130,7 +119,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -140,7 +129,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
                   <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onNavigate('profile')}>
+                <DropdownMenuItem onClick={() => onNavigate("profile")}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>

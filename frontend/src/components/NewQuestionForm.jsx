@@ -1,169 +1,130 @@
-import React, { useState } from 'react';
-import { Plus, X } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Label } from './ui/label';
-import { Badge } from './ui/badge';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { problemsApi } from "../services/api";
 
-export function NewQuestionForm({ onClose }) {
-  const [formData, setFormData] = useState({
-    title: '',
-    body: '',
-    tags: []
-  });
-  const [currentTag, setCurrentTag] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function NewQuestionForm() {
+  const navigate = useNavigate();
 
-  const popularTags = [
-    'react', 'javascript', 'typescript', 'css', 'html', 'node.js',
-    'python', 'java', 'api', 'database', 'authentication', 'deployment'
-  ];
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [problemType, setProblemType] = useState("technical");
+  const [tagIdsCsv, setTagIdsCsv] = useState("");
 
-  const handleSubmit = async (e) => {
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(e) {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.body.trim()) return;
+    if (!title.trim() || !description.trim()) return;
 
-    setIsSubmitting(true);
+    setPosting(true);
+    setError("");
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log('New question:', formData);
+    try {
+      const tag_ids = tagIdsCsv
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => Number(s))
+        .filter((n) => !Number.isNaN(n));
 
-    setIsSubmitting(false);
-    onClose();
-  };
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        problem_type: problemType,
+        tag_ids,
+      };
 
-  const addTag = (tag) => {
-    const trimmedTag = tag.trim().toLowerCase();
-    if (trimmedTag && !formData.tags.includes(trimmedTag) && formData.tags.length < 5) {
-      setFormData(prev => ({ ...prev, tags: [...prev.tags, trimmedTag] }));
-      setCurrentTag('');
+      const created = await problemsApi.create(payload);
+      // API could return the object directly or wrapped.
+      const createdObj = created.problem ?? created;
+      const newId = createdObj?.id;
+
+      if (newId) {
+        navigate(`/questions/${newId}`);
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (e) {
+      setError(
+        e?.response?.data?.message ||
+          e?.message ||
+          "Failed to create the problem"
+      );
+    } finally {
+      setPosting(false);
     }
-  };
-
-  const removeTag = (tagToRemove) => {
-    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }));
-  };
-
-  const handleTagKeyPress = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addTag(currentTag);
-    }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Title */}
-      <div className="space-y-2">
-        <Label htmlFor="title">Question Title</Label>
-        <Input
-          id="title"
-          type="text"
-          placeholder="What's your programming question? Be specific."
-          value={formData.title}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-          className="w-full"
-          required
-        />
-        <p className="text-xs text-muted-foreground">
-          Make your title descriptive and specific to get better answers.
-        </p>
-      </div>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-semibold mb-4">Ask a new question</h1>
 
-      {/* Body */}
-      <div className="space-y-2">
-        <Label htmlFor="body">Question Details</Label>
-        <Textarea
-          id="body"
-          placeholder="Provide more details about your question. Include what you've tried, what you expected, and what actually happened."
-          value={formData.body}
-          onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
-          className="min-h-32 resize-none"
-          required
-        />
-        <p className="text-xs text-muted-foreground">
-          Include relevant code, error messages, and steps you've already taken.
-        </p>
-      </div>
+      {error && (
+        <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-red-700">
+          {error}
+        </div>
+      )}
 
-      {/* Tags */}
-      <div className="space-y-2">
-        <Label htmlFor="tags">Tags (up to 5)</Label>
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Title</label>
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="Brief, descriptive title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
 
-        {/* Current Tags */}
-        {formData.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {formData.tags.map(tag => (
-              <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => removeTag(tag)}
-                  className="ml-1 hover:text-destructive"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))}
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
+          <textarea
+            className="w-full border rounded px-3 py-2 min-h-[160px]"
+            placeholder="Explain your problem, what you tried, and what you expect"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Type</label>
+            <select
+              className="w-full border rounded px-3 py-2"
+              value={problemType}
+              onChange={(e) => setProblemType(e.target.value)}
+            >
+              <option value="technical">technical</option>
+              <option value="language">language</option>
+              <option value="stage">stage</option>
+              <option value="logical">logical</option>
+            </select>
           </div>
-        )}
 
-        {/* Tag Input */}
-        <Input
-          id="tags"
-          type="text"
-          placeholder="Add tags (press Enter or comma to add)"
-          value={currentTag}
-          onChange={(e) => setCurrentTag(e.target.value)}
-          onKeyDown={handleTagKeyPress}
-          disabled={formData.tags.length >= 5}
-        />
-
-        {/* Popular Tags */}
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Popular tags:</p>
-          <div className="flex flex-wrap gap-1">
-            {popularTags
-              .filter(tag => !formData.tags.includes(tag))
-              .slice(0, 8)
-              .map(tag => (
-                <Button
-                  key={tag}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-6"
-                  onClick={() => addTag(tag)}
-                  disabled={formData.tags.length >= 5}
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  {tag}
-                </Button>
-              ))}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Tag IDs (comma-separated, optional)
+            </label>
+            <input
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g. 1,2,3"
+              value={tagIdsCsv}
+              onChange={(e) => setTagIdsCsv(e.target.value)}
+            />
           </div>
         </div>
-      </div>
 
-      {/* Character Count */}
-      <div className="text-xs text-muted-foreground">
-        Title: {formData.title.length} characters | Body: {formData.body.length} characters
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button
+        <button
+          className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
+          disabled={posting}
           type="submit"
-          disabled={!formData.title.trim() || !formData.body.trim() || isSubmitting}
-          className="bg-green-600 hover:bg-green-700"
         >
-          {isSubmitting ? 'Posting...' : 'Post Question'}
-        </Button>
-      </div>
-    </form>
+          {posting ? "Posting…" : "Post question"}
+        </button>
+      </form>
+    </div>
   );
 }

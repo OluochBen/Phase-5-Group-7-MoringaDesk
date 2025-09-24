@@ -38,7 +38,7 @@ export default function PingProbe() {
       .then(res => alive && setStatus(res.data?.status || JSON.stringify(res.data)))
       .catch(err => alive && setStatus("failed: " + (err.response?.status || err.message)));
     return () => { alive = false; };
-  }, []);
+  } []);
 
   return <div style={{padding:8, fontFamily:"monospace"}}>API ping: {status}</div>;
 }

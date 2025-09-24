@@ -1,2 +1,20 @@
 
 backend/.venv/
+backend/.env
+__pycache__/
+*.pyc
+
+__pycache__/
+*.pyc
+.env
+.env.*
+# Python junk
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local dev DBs
+*.db
+*.sqlite
+instance/

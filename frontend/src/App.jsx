@@ -108,8 +108,12 @@ export default function App() {
       <Toaster />
 
       {/* Dev-only API ping badge */}
+Frontend
       {import.meta.env.DEV && import.meta.env.VITE_API_BASE && (
         <div className="dev-ping-probe fixed left-3 bottom-3 z-[9999]">
+      {import.meta.env.DEV && (
+        <div style={{ position: "fixed", left: 12, bottom: 12, zIndex: 9999 }}>
+ main
           <PingProbe />
         </div>
       )}

@@ -13,7 +13,7 @@ export default function Hero() {
         </p>
         <div className="mt-8 flex justify-center gap-4 flex-wrap">
           <Link
-            to="/dashboard"
+            to="/login"
             className="px-6 py-3 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition"
           >
             Get Started Free

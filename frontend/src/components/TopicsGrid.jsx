@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import TopicCard from './TopicCard'
 
 export default function TopicsGrid() {
   const [topics, setTopics] = useState([])
 
   useEffect(() => {
     fetch('/api/topics')
-      .then((r) => r.json())
+      .then((res) => res.json())
       .then((data) => setTopics(data))
       .catch(() => {
-        // fallback sample data
+        // fallback in case the API isn't available
         setTopics([
           { id: 1, title: 'React', count: '2,341' },
           { id: 2, title: 'JavaScript', count: '3,567' },
@@ -29,8 +28,15 @@ export default function TopicsGrid() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {topics.map((t) => (
-          <TopicCard key={t.id} title={t.title} count={t.count} />
+        {topics.map((topic) => (
+          <div key={topic.id} className="p-6 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">{topic.title}</h3>
+              <span className="text-xs px-2 py-1 bg-green-100 text-green-600 rounded-full">
+                {topic.count} questions
+              </span>
+            </div>
+          </div>
         ))}
       </div>
     </section>

@@ -1,5 +1,3 @@
-// Main App Layout (React + Vite + Tailwind) — Exact Match to Provided Mockups
-
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'

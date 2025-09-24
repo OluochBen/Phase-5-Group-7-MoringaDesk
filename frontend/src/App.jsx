@@ -68,16 +68,16 @@ export default function App() {
             element={<EnhancedDashboard currentUser={currentUser} />}
           />
 
-          {/* Question details (loads question, solutions, allows posting/voting) */}
+          {/* Question details */}
           <Route
             path="/questions/:id"
             element={<EnhancedQuestionDetails currentUser={currentUser} />}
           />
 
-          {/* ✅ New question form */}
+          {/* New question form */}
           <Route path="/ask" element={<NewQuestionForm />} />
 
-          {/* ✅ Enhanced user profile */}
+          {/* Enhanced user profile */}
           <Route
             path="/profile/:id"
             element={<EnhancedUserProfile currentUser={currentUser} />}
@@ -113,4 +113,5 @@ export default function App() {
         </div>
       )}
     </div>
-  )
+  );
+}

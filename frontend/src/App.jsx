@@ -17,7 +17,7 @@ import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
-import { mockNotifications, mockUsers } from "./data/mockData";
+import { mockNotifications } from "./data/mockData";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -68,16 +68,16 @@ export default function App() {
             element={<EnhancedDashboard currentUser={currentUser} />}
           />
 
-          {/* Question details (loads question, solutions, allows posting/voting) */}
+          {/* Question details */}
           <Route
             path="/questions/:id"
             element={<EnhancedQuestionDetails currentUser={currentUser} />}
           />
 
-          {/* ✅ New question form */}
+          {/* New question form */}
           <Route path="/ask" element={<NewQuestionForm />} />
 
-          {/* ✅ Enhanced user profile */}
+          {/* Enhanced user profile */}
           <Route
             path="/profile/:id"
             element={<EnhancedUserProfile currentUser={currentUser} />}
@@ -98,7 +98,6 @@ export default function App() {
               />
             }
           />
-
         </Routes>
       </main>
 
@@ -108,8 +107,8 @@ export default function App() {
       <Toaster />
 
       {/* Dev-only API ping badge */}
-      {import.meta.env.DEV && (
-        <div style={{ position: "fixed", left: 12, bottom: 12, zIndex: 9999 }}>
+      {import.meta.env.DEV && import.meta.env.VITE_API_BASE && (
+        <div className="dev-ping-probe fixed left-3 bottom-3 z-[9999]">
           <PingProbe />
         </div>
       )}

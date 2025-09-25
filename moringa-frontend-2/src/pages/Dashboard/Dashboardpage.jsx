@@ -30,19 +30,19 @@ function DashboardPage() {
             </li>
             <li
               className="text-gray-700 hover:text-blue-600 cursor-pointer"
-              onClick={() => navigate("/dashboard/ask")}
+              onClick={() => navigate("/ask")}
             >
               Ask Question
             </li>
             <li
               className="text-gray-700 hover:text-blue-600 cursor-pointer"
-              onClick={() => navigate("/dashboard/questions")}
+              onClick={() => navigate("/questions")}
             >
               All Questions
             </li>
             <li
               className="text-gray-700 hover:text-blue-600 cursor-pointer"
-              onClick={() => navigate("/dashboard/faqs")}
+              onClick={() => navigate("/faqs")}
             >
               FAQs
             </li>
@@ -62,7 +62,7 @@ function DashboardPage() {
         <header className="bg-white shadow-md p-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Dashboard</h2>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/")}
             className="bg-red-500 text-white px-4 py-2 rounded-md"
           >
             Logout
@@ -76,19 +76,21 @@ function DashboardPage() {
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <button
-              onClick={() => navigate("/dashboard/ask")}
+              onClick={() => navigate("/ask")}
               className="bg-blue-500 text-white p-4 rounded-md shadow hover:bg-blue-600"
             >
               Ask Question
             </button>
+
             <button
-              onClick={() => navigate("/dashboard/questions")}
+              onClick={() => navigate("/questions")}
               className="bg-green-500 text-white p-4 rounded-md shadow hover:bg-green-600"
             >
               View All Questions
             </button>
+
             <button
-              onClick={() => navigate("/dashboard/faqs")}
+              onClick={() => navigate("/faqs")}
               className="bg-yellow-500 text-white p-4 rounded-md shadow hover:bg-yellow-600"
             >
               FAQs

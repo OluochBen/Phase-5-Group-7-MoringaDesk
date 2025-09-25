@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 // layout & shared
 import { PublicNavbar } from "./components/PublicNavbar";
@@ -10,15 +10,14 @@ import PingProbe from "./components/dev/PingProbe";
 
 // pages/components you already had
 import { Homepage } from "./components/Homepage";
-import { AuthPage } from "./components/AuthPage";
-import { UserHome } from "./components/UserHome";
+import { LoginScreen } from "./components/LoginScreen";
+import { EnhancedDashboard } from "./components/EnhancedDashboard";
 import { EnhancedQuestionDetails } from "./components/EnhancedQuestionDetails";
-import { AdminPanel } from "./components/AdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
-import { mockNotifications, mockQuestions, mockUsers } from "./data/mockData";
+import { mockNotifications } from "./data/mockData";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,17 +38,6 @@ export default function App() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const RequireAuth = ({ children }) => {
-    if (!currentUser) return <Navigate to="/login" replace />;
-    return children;
-  };
-
-  const RequireAdmin = ({ children }) => {
-    if (!currentUser) return <Navigate to="/login" replace />;
-    if (currentUser.role !== "admin") return <Navigate to="/dashboard" replace />;
-    return children;
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
@@ -63,7 +51,7 @@ export default function App() {
       ) : (
         <PublicNavbar
           onLogin={() => navigate("/login")}
-          onSignUp={() => navigate("/register")}
+          onSignUp={() => navigate("/login")}
         />
       )}
 
@@ -72,26 +60,12 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Homepage />} />
 
-          <Route path="/login" element={<AuthPage defaultTab="login" onLogin={handleLogin} onRegister={handleLogin} />} />
-          <Route path="/register" element={<AuthPage defaultTab="signup" onLogin={handleLogin} onRegister={handleLogin} />} />
+          <Route path="/login" element={<LoginScreen onLogin={handleLogin} />} />
 
           {/* Dashboard now fetches from /problems itself */}
           <Route
             path="/dashboard"
-            element={
-              <RequireAuth>
-                <UserHome currentUser={currentUser} />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/user"
-            element={
-              <RequireAuth>
-                <UserHome currentUser={currentUser} />
-              </RequireAuth>
-            }
+            element={<EnhancedDashboard currentUser={currentUser} />}
           />
 
           {/* Question details */}
@@ -101,16 +75,12 @@ export default function App() {
           />
 
           {/* New question form */}
-          <Route path="/ask" element={<RequireAuth><NewQuestionForm /></RequireAuth>} />
+          <Route path="/ask" element={<NewQuestionForm />} />
 
           {/* Enhanced user profile */}
           <Route
             path="/profile/:id"
-            element={
-              <RequireAuth>
-                <EnhancedUserProfile currentUser={currentUser} />
-              </RequireAuth>
-            }
+            element={<EnhancedUserProfile currentUser={currentUser} />}
           />
 
           <Route path="/faq" element={<FAQScreen currentUser={currentUser} />} />
@@ -118,28 +88,16 @@ export default function App() {
           <Route
             path="/notifications"
             element={
-              <RequireAuth>
-                <NotificationsPanel
-                  notifications={notifications}
-                  onMarkAsRead={(id) =>
-                    setNotifications((prev) =>
-                      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-                    )
-                  }
-                />
-              </RequireAuth>
+              <NotificationsPanel
+                notifications={notifications}
+                onMarkAsRead={(id) =>
+                  setNotifications((prev) =>
+                    prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+                  )
+                }
+              />
             }
           />
-
-          <Route
-            path="/admin"
-            element={
-              <RequireAdmin>
-                <AdminPanel questions={mockQuestions} users={mockUsers} currentUser={currentUser} />
-              </RequireAdmin>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 

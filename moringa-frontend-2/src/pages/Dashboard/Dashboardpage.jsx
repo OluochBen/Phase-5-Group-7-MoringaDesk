@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function DashboardPage() {
-  // Dummy static state
+  const navigate = useNavigate();
+
   const [recentQuestions] = useState([
     { id: 1, title: "How do I fix a CORS error in React?" },
     { id: 2, title: "Best practices for structuring a Flask API" },
@@ -20,19 +22,34 @@ function DashboardPage() {
         <h1 className="text-2xl font-bold text-blue-600 mb-6">MoringaDesk</h1>
         <nav>
           <ul className="space-y-4">
-            <li className="text-gray-700 hover:text-blue-600 cursor-pointer">
+            <li
+              className="text-gray-700 hover:text-blue-600 cursor-pointer"
+              onClick={() => navigate("/dashboard")}
+            >
               Dashboard
             </li>
-            <li className="text-gray-700 hover:text-blue-600 cursor-pointer">
+            <li
+              className="text-gray-700 hover:text-blue-600 cursor-pointer"
+              onClick={() => navigate("/dashboard/ask")}
+            >
               Ask Question
             </li>
-            <li className="text-gray-700 hover:text-blue-600 cursor-pointer">
+            <li
+              className="text-gray-700 hover:text-blue-600 cursor-pointer"
+              onClick={() => navigate("/dashboard/questions")}
+            >
               All Questions
             </li>
-            <li className="text-gray-700 hover:text-blue-600 cursor-pointer">
+            <li
+              className="text-gray-700 hover:text-blue-600 cursor-pointer"
+              onClick={() => navigate("/dashboard/faqs")}
+            >
               FAQs
             </li>
-            <li className="text-gray-700 hover:text-blue-600 cursor-pointer">
+            <li
+              className="text-gray-700 hover:text-blue-600 cursor-pointer"
+              onClick={() => navigate("/profile")}
+            >
               Profile
             </li>
           </ul>
@@ -44,7 +61,10 @@ function DashboardPage() {
         {/* Navbar */}
         <header className="bg-white shadow-md p-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Dashboard</h2>
-          <button className="bg-red-500 text-white px-4 py-2 rounded-md">
+          <button
+            onClick={() => navigate("/login")}
+            className="bg-red-500 text-white px-4 py-2 rounded-md"
+          >
             Logout
           </button>
         </header>
@@ -55,13 +75,22 @@ function DashboardPage() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <button className="bg-blue-500 text-white p-4 rounded-md shadow hover:bg-blue-600">
+            <button
+              onClick={() => navigate("/dashboard/ask")}
+              className="bg-blue-500 text-white p-4 rounded-md shadow hover:bg-blue-600"
+            >
               Ask Question
             </button>
-            <button className="bg-green-500 text-white p-4 rounded-md shadow hover:bg-green-600">
+            <button
+              onClick={() => navigate("/dashboard/questions")}
+              className="bg-green-500 text-white p-4 rounded-md shadow hover:bg-green-600"
+            >
               View All Questions
             </button>
-            <button className="bg-yellow-500 text-white p-4 rounded-md shadow hover:bg-yellow-600">
+            <button
+              onClick={() => navigate("/dashboard/faqs")}
+              className="bg-yellow-500 text-white p-4 rounded-md shadow hover:bg-yellow-600"
+            >
               FAQs
             </button>
           </div>

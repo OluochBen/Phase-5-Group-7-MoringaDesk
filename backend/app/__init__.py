@@ -58,6 +58,7 @@ def create_app():
     from .routes.faqs import faqs_bp
     from .routes.notifications import notifications_bp
     from .routes.admin import admin_bp
+    from .routes.tags import tags_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(problems_bp, url_prefix='/problems')
@@ -65,6 +66,7 @@ def create_app():
     app.register_blueprint(faqs_bp, url_prefix='/faqs')
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(tags_bp, url_prefix='/tags')
 
     @app.route('/ping')
     def ping():

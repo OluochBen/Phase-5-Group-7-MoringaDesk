@@ -16,6 +16,8 @@ export const faqApi = {
 };
 
 export const authApi = {
+  register: (name, email, password, role = "user") =>
+    api.post("/auth/register", { name, email, password, role }).then(r => r.data),
   login: (email, password) =>
     api.post("/auth/login", { email, password }).then(r => r.data),
   me: () => api.get("/auth/me").then(r => r.data),
@@ -63,6 +65,13 @@ export const notificationsApi = {
 
   markAllRead: () =>
     api.put(`/notifications/read-all`).then(r => r.data),
+};
+
+// ---- Tags
+export const tagsApi = {
+  list: ({ q = "", page = 1, per_page = 20 } = {}) =>
+    api.get("/tags", { params: { q, page, per_page } }).then(r => r.data),
+  create: (name) => api.post("/tags", { name }).then(r => r.data),
 };
 
 

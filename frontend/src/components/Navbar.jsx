@@ -5,7 +5,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { AskQuestionDialog } from "./AskQuestionDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +28,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
           {/* Logo */}
           <div className="flex items-center">
             <button
-              onClick={() => onNavigate("/dashboard")}
+              onClick={() => onNavigate("dashboard")}
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
             >
               <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
@@ -55,16 +54,19 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Ask Question -> popup dialog */}
-            <div className="hidden sm:block">
-              <AskQuestionDialog currentUser={user} />
-            </div>
+            {/* Ask Question -> route to /ask */}
+            <Link to="/ask" className="hidden sm:block">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <Plus className="w-4 h-4" />
+                <span>Ask Question</span>
+              </Button>
+            </Link>
 
             {/* Navigation Buttons */}
             <Button
               variant={currentScreen === "dashboard" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onNavigate("/dashboard")}
+              onClick={() => onNavigate("dashboard")}
               className="hidden sm:flex items-center space-x-1"
             >
               <Home className="w-4 h-4" />
@@ -74,7 +76,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
             <Button
               variant={currentScreen === "faq" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onNavigate("/faq")}
+              onClick={() => onNavigate("faq")}
               className="hidden sm:flex items-center space-x-1"
             >
               <HelpCircle className="w-4 h-4" />
@@ -85,8 +87,8 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
               <Button
                 variant={currentScreen === "admin" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => onNavigate("/admin")}
-              className="hidden sm:flex items-center space-x-1"
+                onClick={() => onNavigate("admin")}
+                className="hidden sm:flex items-center space-x-1"
               >
                 <Shield className="w-4 h-4" />
                 <span>Admin</span>
@@ -97,7 +99,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
             <Button
               variant={currentScreen === "notifications" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onNavigate("/notifications")}
+              onClick={() => onNavigate("notifications")}
               className="relative"
             >
               <Bell className="w-4 h-4" />
@@ -127,7 +129,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
                   <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onNavigate(`/profile/${user.id}`)}>
+                <DropdownMenuItem onClick={() => onNavigate("profile")}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>

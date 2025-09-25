@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import CommunityPage from './pages/CommunityPage'
 import TopicsPage from './pages/TopicsPage'
+import FeaturesPage from './pages/FeaturesPage'
+import AboutPage from './pages/AboutPage'
 import Header from './components/Header'
 import Footer from './components/Footer'
 
@@ -22,6 +24,8 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/topics" element={<TopicsPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/about" element={<AboutPage />} />
           </Routes>
         </main>
         <Footer />

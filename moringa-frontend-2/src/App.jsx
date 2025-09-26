@@ -9,6 +9,9 @@ import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import DashboardPage from "./pages/Dashboard/Dashboardpage";
 import FAQsPage from "./pages/Questions/FAQsPage";
+import QuestionPage from "./pages/Questions/QuestionPage";
+
+
 
 
 
@@ -24,7 +27,8 @@ function App() {
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/faqs" element={<FAQsPage />} />
       <Route path="/" element={<HomePage />} />
-    
+      <Route path="/question/:id" element={<QuestionPage />} />
+      
     </Routes>
   );
 }

@@ -10,6 +10,9 @@ import RegisterPage from './pages/Auth/RegisterPage';
 import DashboardPage from "./pages/Dashboard/Dashboardpage";
 import FAQsPage from "./pages/Questions/FAQsPage";
 import QuestionPage from "./pages/Questions/QuestionPage";
+import UserProfilePage from "./pages/Profile/UserProfilePage";
+import AdminProfile from "./pages/Admin/AdminProfile";
+
 
 
 
@@ -18,6 +21,8 @@ import QuestionPage from "./pages/Questions/QuestionPage";
 
 function App() {
   return (
+    
+    
     <Routes>
       <Route path="/questions" element={<QuestionListPage />} />
       <Route path="/ask" element={<AskQuestionPage />} />
@@ -28,8 +33,14 @@ function App() {
       <Route path="/faqs" element={<FAQsPage />} />
       <Route path="/" element={<HomePage />} />
       <Route path="/question/:id" element={<QuestionPage />} />
+      <Route path="/profile" element={<UserProfilePage />} />
+      <Route path="/admin-profile" element={<AdminProfile />} />
+  
+      
+
       
     </Routes>
+    
   );
 }
 

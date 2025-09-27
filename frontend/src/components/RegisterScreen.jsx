@@ -13,12 +13,19 @@ export function RegisterScreen({ onRegister }) {
     setErr("");
     setLoading(true);
     try {
-      const { access_token } = await authApi.register(name, email, password);
+      // Register
+      const { user, access_token } = await authApi.register(name, email, password);
+
+      // Save JWT
       localStorage.setItem("access_token", access_token);
+
+      // Fetch profile
       const me = await authApi.me();
-      onRegister(me.user ?? me);
+
+      // Pass user to parent
+      onRegister(me.user ?? user);
     } catch (e) {
-      setErr(e.response?.data?.message || e.response?.data?.error || "Registration failed");
+      setErr(e.response?.data?.error || e.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -29,10 +36,33 @@ export function RegisterScreen({ onRegister }) {
       <h1 className="text-2xl font-semibold mb-4">Create account</h1>
       {err && <div className="text-red-600 mb-3">{err}</div>}
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input className="border rounded p-2 w-full" value={name} onChange={(e)=>setName(e.target.value)} placeholder="Full name" />
-        <input className="border rounded p-2 w-full" value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Email" />
-        <input className="border rounded p-2 w-full" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="Password" />
-        <button className="bg-black text-white px-4 py-2 rounded disabled:opacity-50" disabled={loading}>
+        <input
+          className="border rounded p-2 w-full"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Full name"
+          required
+        />
+        <input
+          className="border rounded p-2 w-full"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          type="email"
+          required
+        />
+        <input
+          className="border rounded p-2 w-full"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+        />
+        <button
+          className="bg-black text-white px-4 py-2 rounded disabled:opacity-50 w-full"
+          disabled={loading}
+        >
           {loading ? "Creating…" : "Create account"}
         </button>
       </form>

@@ -1,7 +1,6 @@
-// src/services/api.js
 import axios from "axios";
 
-// ✅ Use VITE_API_BASE if set, else default to /api (Vite proxy in dev)
+// ✅ Base URL: use VITE_API_BASE if set, else default to /api (Vite proxy in dev)
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const api = axios.create({
@@ -37,7 +36,6 @@ export const authApi = {
 
   me: () => api.get("/auth/me").then((r) => r.data),
 
-  // ✅ Added in login-register-auth
   requestPasswordReset: (email) =>
     api.post("/auth/request-reset", { email }).then((r) => r.data),
 
@@ -79,7 +77,6 @@ export const votesApi = {
   removeVote: (solutionId) =>
     api.delete(`/solutions/${solutionId}/vote`).then((r) => r.data),
 
-  // ✅ Added in login-register-auth
   getVotes: (solutionId) =>
     api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),
 };
@@ -106,7 +103,6 @@ export const tagsApi = {
   create: (name) => api.post("/tags", { name }).then((r) => r.data),
 };
 
-// ✅ Added in login-register-auth
 // ---- Profiles
 export const profileApi = {
   get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),

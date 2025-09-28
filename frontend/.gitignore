@@ -35,3 +35,5 @@ backend/.env
 backend/.env.*
 
 VITE_API_BASE=http://localhost:5000
+backend/.env
+backend/instance/moringadesk.db

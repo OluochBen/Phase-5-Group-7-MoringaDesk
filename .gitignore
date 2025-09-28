@@ -1,20 +1,27 @@
-
-backend/.venv/
-backend/.env
-__pycache__/
-*.pyc
-
-__pycache__/
-*.pyc
-.env
-.env.*
-# Python junk
-__pycache__/
-*.pyc
+# Python
+**/__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
+*.so
+.venv/
+.pytest_cache/
 
-# Local dev DBs
-*.db
-*.sqlite
-instance/
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.eslintcache
+frontend/.parcel-cache/
+
+# Env (keep examples only)
+frontend/.env
+frontend/.env.*.local
+!frontend/.env.example
+backend/.env
+!backend/.env.example
+
+# OS/IDE
+.DS_Store
+.idea/
+.vscode/

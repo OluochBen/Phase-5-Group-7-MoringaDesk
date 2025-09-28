@@ -6,6 +6,7 @@ from ..models import User, PasswordResetToken
 from ..schemas import UserRegistrationSchema, UserLoginSchema
 from ..utils.email_utils import send_reset_email
 
+
 class AuthService:
     @staticmethod
     def register_user(data):
@@ -46,12 +47,15 @@ class AuthService:
     def get_user_by_id(user_id):
         return User.query.get(user_id)
 
-    # --- New password reset flow
+    # --- Password reset flow
     @staticmethod
     def request_password_reset(email):
         user = User.query.filter_by(email=email).first()
         if not user:
             return {'error': 'User not found'}, 404
+
+        # Invalidate any previous tokens
+        PasswordResetToken.query.filter_by(user_id=user.id, used=False).delete()
 
         token = secrets.token_urlsafe(32)
         reset = PasswordResetToken(
@@ -62,21 +66,26 @@ class AuthService:
         db.session.add(reset)
         db.session.commit()
 
+        # Send reset email with token
         send_reset_email(user.email, token)
         return {'message': 'Password reset email sent'}, 200
 
     @staticmethod
     def reset_password(token, new_password):
         reset = PasswordResetToken.query.filter_by(token=token).first()
-        if not reset or reset.expires_at < datetime.datetime.utcnow():
+        if not reset or not reset.is_valid():
             return {'error': 'Invalid or expired token'}, 400
 
         user = User.query.get(reset.user_id)
         if not user:
             return {'error': 'User not found'}, 404
 
+        # Update password
         user.set_password(new_password)
-        db.session.delete(reset)
-        db.session.commit()
 
+        # Mark token as used
+        reset.used = True
+        reset.used_at = datetime.datetime.utcnow()
+
+        db.session.commit()
         return {'message': 'Password updated successfully'}, 200

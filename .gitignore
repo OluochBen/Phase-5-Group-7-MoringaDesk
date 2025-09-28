@@ -18,3 +18,7 @@ __pycache__/
 *.db
 *.sqlite
 instance/
+
+MAIL_SENDER=oluochbenard7@gmail.com
+MAIL_PASSWORD=lytb gjrx jlpj epou # must be an App Password
+FRONTEND_URL=http://localhost:5173

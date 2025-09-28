@@ -54,9 +54,7 @@ export const problemsApi = {
   get: (id) => api.get(`/problems/${id}`).then((r) => r.data),
 
   create: ({ title, description, problem_type, tag_ids = [] }) =>
-    api
-      .post("/problems", { title, description, problem_type, tag_ids })
-      .then((r) => r.data),
+    api.post("/problems", { title, description, problem_type, tag_ids }).then((r) => r.data),
 };
 
 // ---- Solutions (Answers)

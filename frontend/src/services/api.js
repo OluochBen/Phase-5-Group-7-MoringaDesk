@@ -1,15 +1,15 @@
 // src/services/api.js
 import axios from "axios";
 
-// Use explicit backend if provided, else dev proxy (/api)
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+// ✅ Base URL: use VITE_API_BASE if set, else default to /api (for Vite dev proxy)
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
 });
 
-// Attach JWT automatically if present
+// ✅ Attach JWT if present
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -29,7 +29,7 @@ export const faqApi = {
 
 // ---- Auth
 export const authApi = {
-  register: (name, email, password, role = "student") =>
+  register: (name, email, password, role = "user") =>
     api.post("/auth/register", { name, email, password, role }).then((r) => r.data),
 
   login: (email, password) =>

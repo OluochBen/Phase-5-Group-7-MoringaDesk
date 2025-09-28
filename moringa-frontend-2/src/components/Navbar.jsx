@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell";
 
 export default function Navbar() {
   return (
@@ -9,8 +10,8 @@ export default function Navbar() {
           MoringaDesk
         </Link>
 
-        {/* Links */}
-        <div className="space-x-6">
+        {/* Links + Notification */}
+        <div className="flex items-center space-x-6">
           <Link to="/" className="hover:text-gray-200">
             Home
           </Link>
@@ -29,6 +30,9 @@ export default function Navbar() {
           <Link to="/profile" className="hover:text-gray-200">
             Profile
           </Link>
+
+          {/* Notification Bell */}
+          <NotificationBell />
         </div>
       </div>
     </nav>

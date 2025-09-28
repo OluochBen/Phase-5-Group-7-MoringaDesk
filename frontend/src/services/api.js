@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 
-// ✅ Base URL: use VITE_API_BASE if set, else default to /api (for Vite dev proxy)
+// ✅ Use VITE_API_BASE if set, else default to /api (Vite proxy in dev)
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const api = axios.create({
@@ -74,8 +74,10 @@ export const solutionsApi = {
 export const votesApi = {
   voteSolution: (solutionId, vote_type) =>
     api.post(`/solutions/${solutionId}/vote`, { vote_type }).then((r) => r.data),
+
   removeVote: (solutionId) =>
     api.delete(`/solutions/${solutionId}/vote`).then((r) => r.data),
+
   getVotes: (solutionId) =>
     api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),
 };
@@ -98,6 +100,7 @@ export const notificationsApi = {
 export const tagsApi = {
   list: ({ q = "", page = 1, per_page = 20 } = {}) =>
     api.get("/tags", { params: { q, page, per_page } }).then((r) => r.data),
+
   create: (name) => api.post("/tags", { name }).then((r) => r.data),
 };
 

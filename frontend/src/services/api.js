@@ -37,6 +37,7 @@ export const authApi = {
 
   me: () => api.get("/auth/me").then((r) => r.data),
 
+  // ✅ Added in login-register-auth
   requestPasswordReset: (email) =>
     api.post("/auth/request-reset", { email }).then((r) => r.data),
 
@@ -54,7 +55,9 @@ export const problemsApi = {
   get: (id) => api.get(`/problems/${id}`).then((r) => r.data),
 
   create: ({ title, description, problem_type, tag_ids = [] }) =>
-    api.post("/problems", { title, description, problem_type, tag_ids }).then((r) => r.data),
+    api
+      .post("/problems", { title, description, problem_type, tag_ids })
+      .then((r) => r.data),
 };
 
 // ---- Solutions (Answers)
@@ -76,6 +79,7 @@ export const votesApi = {
   removeVote: (solutionId) =>
     api.delete(`/solutions/${solutionId}/vote`).then((r) => r.data),
 
+  // ✅ Added in login-register-auth
   getVotes: (solutionId) =>
     api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),
 };
@@ -102,6 +106,7 @@ export const tagsApi = {
   create: (name) => api.post("/tags", { name }).then((r) => r.data),
 };
 
+// ✅ Added in login-register-auth
 // ---- Profiles
 export const profileApi = {
   get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),

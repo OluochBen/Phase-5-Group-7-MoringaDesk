@@ -36,7 +36,15 @@ def create_app():
     from . import models            
     migrate.init_app(app, db)
     jwt.init_app(app)
-    CORS(app)
+
+    # ✅ CORS: allow frontend (5173) to call backend (5000)
+    CORS(
+        app,
+        resources={r"/*": {"origins": ["http://localhost:5173"]}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    )
 
     # JWT error handlers
     @jwt.expired_token_loader
@@ -51,7 +59,7 @@ def create_app():
     def missing_token_callback(error):
         return {'error': 'Authorization token is required'}, 401
 
-    # Blueprints (all relative)
+    # Blueprints
     from .routes.auth import auth_bp
     from .routes.problems import problems_bp
     from .routes.solutions import solutions_bp

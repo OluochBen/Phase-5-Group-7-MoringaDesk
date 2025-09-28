@@ -21,6 +21,11 @@ frontend/.env.*.local
 backend/.env
 !backend/.env.example
 
+# Local dev DBs
+*.db
+*.sqlite
+backend/instance/
+
 # OS/IDE
 .DS_Store
 .idea/

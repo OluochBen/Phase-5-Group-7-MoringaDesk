@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 
-// Use the Vite dev proxy by default; override with VITE_API_BASE if needed.
+// ✅ Base URL: use VITE_API_BASE if set, else default to /api (Vite proxy in dev)
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const api = axios.create({
@@ -9,7 +9,7 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// Attach JWT if present
+// ✅ Attach JWT if present
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -31,9 +31,17 @@ export const faqApi = {
 export const authApi = {
   register: (name, email, password, role = "user") =>
     api.post("/auth/register", { name, email, password, role }).then((r) => r.data),
+
   login: (email, password) =>
     api.post("/auth/login", { email, password }).then((r) => r.data),
+
   me: () => api.get("/auth/me").then((r) => r.data),
+
+  requestPasswordReset: (email) =>
+    api.post("/auth/request-reset", { email }).then((r) => r.data),
+
+  resetPassword: (token, password) =>
+    api.post("/auth/reset-password", { token, password }).then((r) => r.data),
 };
 
 // ---- Problems (Questions)
@@ -66,8 +74,12 @@ export const solutionsApi = {
 export const votesApi = {
   voteSolution: (solutionId, vote_type) =>
     api.post(`/solutions/${solutionId}/vote`, { vote_type }).then((r) => r.data),
+
   removeVote: (solutionId) =>
     api.delete(`/solutions/${solutionId}/vote`).then((r) => r.data),
+
+  getVotes: (solutionId) =>
+    api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),
 };
 
 // ---- Notifications
@@ -88,7 +100,13 @@ export const notificationsApi = {
 export const tagsApi = {
   list: ({ q = "", page = 1, per_page = 20 } = {}) =>
     api.get("/tags", { params: { q, page, per_page } }).then((r) => r.data),
+
   create: (name) => api.post("/tags", { name }).then((r) => r.data),
+};
+
+// ---- Profiles
+export const profileApi = {
+  get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),
 };
 
 export default api;

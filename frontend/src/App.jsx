@@ -11,8 +11,8 @@ import PingProbe from "./components/dev/PingProbe";
 // pages/components
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
-import { UserHome } from "./components/UserHome";
-import { EnhancedQuestionDetails } from "./components/EnhancedQuestionDetails";
+import  UserHome  from "./components/UserHome";
+import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails";
 import { AdminPanel } from "./components/AdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
@@ -208,3 +208,4 @@ export default function App() {
     </div>
   );
 }
+

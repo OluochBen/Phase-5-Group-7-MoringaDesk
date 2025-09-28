@@ -1,3 +1,4 @@
+// src/services/api.js
 import axios from "axios";
 
 // ✅ Base URL: use VITE_API_BASE if set, else default to /api (Vite proxy in dev)

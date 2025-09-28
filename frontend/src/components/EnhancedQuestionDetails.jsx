@@ -1,111 +1,205 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { problemsApi, solutionsApi, votesApi } from "../services/api";
+import { problemsApi, solutionsApi } from "../services/api";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
 
-export function EnhancedQuestionDetails({ currentUser }) {
+// --- helper: normalize problem shape coming from API ---
+function normalizeProblem(row) {
+  if (!row) return null;
+  const src = row.attributes ? { id: row.id, ...row.attributes } : row;
+  const tags = (src.tags || []).map((t) => (typeof t === "string" ? t : t.name));
+  return {
+    id: src.id ?? src.problem_id ?? src._id ?? src.uuid,
+    title: src.title ?? "(untitled)",
+    body: src.description ?? src.body ?? "",
+    tags,
+    votes: src.votes ?? src.score ?? 0,
+    views: src.views ?? 0,
+    bounty: src.bounty ?? 0,
+    createdAt: src.created_at || src.createdAt,
+    authorName: src.author?.name ?? src.user_name ?? "Unknown",
+  };
+}
+
+export default function EnhancedQuestionDetails({ currentUser }) {
   const { id } = useParams();
   const [problem, setProblem] = useState(null);
-  const [solutions, setSolutions] = useState([]);
+  const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [err, setErr] = useState(null);
+  const [newAnswer, setNewAnswer] = useState("");
   const [posting, setPosting] = useState(false);
 
+  // load problem + solutions
   useEffect(() => {
     let alive = true;
-    async function load() {
+    (async () => {
+      setLoading(true);
+      setErr(null);
       try {
-        setLoading(true);
-        setErr("");
-        const p = await problemsApi.get(id);
-        // backend might return { problem: {...} } or the object directly
-        setProblem(p.problem ?? p);
-        const s = await solutionsApi.list(id, { page: 1, per_page: 20 });
-        setSolutions(s.solutions ?? s.items ?? s ?? []);
+        // Problem
+        let p = await problemsApi.get(id);
+        if (Array.isArray(p)) p = p[0];
+        const normalized = normalizeProblem(p);
+        if (!alive) return;
+        setProblem(normalized);
+
+        // Solutions
+        const solsPayload = await solutionsApi.list(id, { page: 1, per_page: 20 });
+        const list = Array.isArray(solsPayload)
+          ? solsPayload
+          : solsPayload?.data || solsPayload?.items || solsPayload?.results || [];
+
+        const normalizedAnswers = list.map((s, i) => {
+          const a = s?.attributes ? { id: s.id, ...s.attributes } : s || {};
+          return {
+            id: a.id ?? `${id}-a${i}`,
+            authorName: a.author?.name ?? a.user_name ?? "Unknown",
+            body: a.content ?? a.body ?? "",
+            votes: a.votes ?? a.score ?? 0,
+            createdAt: a.created_at || a.createdAt,
+          };
+        });
+        if (!alive) return;
+        setAnswers(normalizedAnswers);
       } catch (e) {
-        if (alive) setErr("Failed to load problem");
+        if (!alive) return;
+        const status = e?.response?.status ?? null;
+        const message =
+          status === 404
+            ? "Problem not found."
+            : status
+            ? `Server error (${status}).`
+            : e?.message || "Request failed.";
+        setErr(message);
       } finally {
         if (alive) setLoading(false);
       }
-    }
-    load();
+    })();
     return () => {
       alive = false;
     };
   }, [id]);
 
-  async function submitAnswer(e) {
-    e.preventDefault();
-    if (!answer.trim()) return;
-    setPosting(true);
+  const submitAnswer = async () => {
+    if (!newAnswer.trim()) return;
     try {
-      await solutionsApi.create(id, { content: answer.trim() });
-      setAnswer("");
-      // refresh solutions
-      const s = await solutionsApi.list(id, { page: 1, per_page: 20 });
-      setSolutions(s.solutions ?? s.items ?? s ?? []);
+      setPosting(true);
+      await solutionsApi.create(id, { content: newAnswer.trim() });
+      setNewAnswer("");
+      // refresh answers
+      const solsPayload = await solutionsApi.list(id, { page: 1, per_page: 20 });
+      const list = Array.isArray(solsPayload)
+        ? solsPayload
+        : solsPayload?.data || solsPayload?.items || solsPayload?.results || [];
+      setAnswers(
+        list.map((s, i) => {
+          const a = s?.attributes ? { id: s.id, ...s.attributes } : s || {};
+          return {
+            id: a.id ?? `${id}-a${i}`,
+            authorName: a.author?.name ?? a.user_name ?? "Unknown",
+            body: a.content ?? a.body ?? "",
+            votes: a.votes ?? a.score ?? 0,
+            createdAt: a.created_at || a.createdAt,
+          };
+        })
+      );
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to post solution");
+      const status = e?.response?.status ?? null;
+      const message =
+        status ? `Failed to post answer (${status}).` : e?.message || "Failed to post answer.";
+      alert(message); // replace with a toast in your UI lib if you prefer
     } finally {
       setPosting(false);
     }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">Loading…</CardContent>
+      </Card>
+    );
   }
 
-  async function vote(solutionId, type) {
-    try {
-      await votesApi.voteSolution(solutionId, type); // "up" | "down"
-      const s = await solutionsApi.list(id, { page: 1, per_page: 20 });
-      setSolutions(s.solutions ?? s.items ?? s ?? []);
-    } catch (e) {
-      alert("Failed to vote");
-    }
+  if (err || !problem) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-red-600">
+          Failed to load problem{err ? `: ${err}` : ""}.
+        </CardContent>
+      </Card>
+    );
   }
-
-  if (loading) return <div className="p-6">Loading…</div>;
-  if (err) return <div className="p-6 text-red-600">{err}</div>;
-  if (!problem) return <div className="p-6">Not found</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="border rounded p-4">
-        <h1 className="text-2xl font-semibold mb-2">{problem.title}</h1>
-        <p className="text-sm text-muted-foreground whitespace-pre-line">
-          {problem.description}
-        </p>
-      </div>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Solutions</h2>
-        {solutions.length === 0 && <div>No solutions yet.</div>}
-        {solutions.map((s) => (
-          <div key={s.id} className="border rounded p-4">
-            <div className="text-sm text-muted-foreground mb-2">
-              by {s.author?.name ?? s.author_name ?? "Someone"}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Problem */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-2xl">{problem.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {problem.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {problem.tags.map((t) => (
+                <Badge key={t} variant="secondary">
+                  {t}
+                </Badge>
+              ))}
             </div>
-            <div className="whitespace-pre-line">{s.content}</div>
-            <div className="flex gap-2 mt-3">
-              <button className="border px-3 py-1 rounded" onClick={() => vote(s.id, "up")}>Upvote</button>
-              <button className="border px-3 py-1 rounded" onClick={() => vote(s.id, "down")}>Downvote</button>
-            </div>
+          )}
+          <div className="prose max-w-none whitespace-pre-wrap">{problem.body}</div>
+          <div className="text-sm text-muted-foreground">
+            Asked by {problem.authorName}
+            {problem.createdAt ? ` • ${new Date(problem.createdAt).toLocaleString()}` : ""}
           </div>
-        ))}
-      </section>
+        </CardContent>
+      </Card>
 
-      {/* Add answer (auth required) */}
-      {currentUser ? (
-        <form onSubmit={submitAnswer} className="space-y-2">
-          <textarea
-            className="w-full border p-2 rounded min-h-[120px]"
-            placeholder="Write your answer…"
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-          />
-          <button className="px-4 py-2 bg-black text-white rounded disabled:opacity-50" disabled={posting}>
-            {posting ? "Posting…" : "Post answer"}
-          </button>
-        </form>
-      ) : (
-        <div className="text-sm text-muted-foreground">Sign in to answer</div>
+      {/* Answers */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Answers ({answers.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {answers.length === 0 ? (
+            <div className="text-muted-foreground">No answers yet.</div>
+          ) : (
+            answers.map((a) => (
+              <div key={a.id} className="border-b last:border-0 pb-4">
+                <div className="text-sm text-muted-foreground mb-1">
+                  {a.authorName}
+                  {a.createdAt ? ` • ${new Date(a.createdAt).toLocaleString()}` : ""}
+                </div>
+                <div className="whitespace-pre-wrap">{a.body}</div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Answer */}
+      {currentUser && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Answer</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              value={newAnswer}
+              onChange={(e) => setNewAnswer(e.target.value)}
+              placeholder="Write your answer…"
+              rows={6}
+            />
+            <Button onClick={submitAnswer} disabled={posting}>
+              {posting ? "Posting…" : "Post Answer"}
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

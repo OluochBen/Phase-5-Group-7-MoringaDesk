@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 const api = axios.create({ baseURL: API_BASE });
 
 // Attach JWT automatically
@@ -12,7 +12,7 @@ api.interceptors.request.use((config) => {
 
 // --- Auth
 export const authApi = {
-  register: (name, email, password, role = "user") =>
+  register: (name, email, password, role = "student") =>
     api.post("/auth/register", { name, email, password, role }).then((r) => r.data),
 
   login: (email, password) =>
@@ -23,8 +23,8 @@ export const authApi = {
   requestPasswordReset: (email) =>
     api.post("/auth/request-reset", { email }).then((r) => r.data),
 
-  resetPassword: (token, newPassword) =>
-    api.post("/auth/reset-password", { token, new_password: newPassword }).then((r) => r.data),
+  resetPassword: (token, password) =>
+    api.post("/auth/reset-password", { token, password }).then((r) => r.data),
 };
 
 // --- Health

@@ -8,7 +8,7 @@ import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
 import PingProbe from "./components/dev/PingProbe";
 
-// pages/components you already had
+// pages/components
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
 import { UserHome } from "./components/UserHome";
@@ -18,6 +18,9 @@ import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
+import { PasswordReset } from "./components/PasswordReset"; // ✅ added
+
+// mock data (for demo mode)
 import { mockNotifications, mockQuestions, mockUsers } from "./data/mockData";
 
 export default function App() {
@@ -72,10 +75,39 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Homepage />} />
 
-          <Route path="/login" element={<AuthPage defaultTab="login" onLogin={handleLogin} onRegister={handleLogin} />} />
-          <Route path="/register" element={<AuthPage defaultTab="signup" onLogin={handleLogin} onRegister={handleLogin} />} />
+          {/* Auth */}
+          <Route
+            path="/login"
+            element={
+              <AuthPage
+                defaultTab="login"
+                onLogin={handleLogin}
+                onRegister={handleLogin}
+              />
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthPage
+                defaultTab="signup"
+                onLogin={handleLogin}
+                onRegister={handleLogin}
+              />
+            }
+          />
+          {/* ✅ Forgot password / reset flow */}
+          <Route
+            path="/reset-password"
+            element={
+              <PasswordReset
+                onSuccess={() => navigate("/login")}
+                onClose={() => navigate("/login")}
+              />
+            }
+          />
 
-          {/* Dashboard now fetches from /problems itself */}
+          {/* Dashboard */}
           <Route
             path="/dashboard"
             element={
@@ -85,6 +117,7 @@ export default function App() {
             }
           />
 
+          {/* Alternative user home */}
           <Route
             path="/user"
             element={
@@ -101,7 +134,14 @@ export default function App() {
           />
 
           {/* New question form */}
-          <Route path="/ask" element={<RequireAuth><NewQuestionForm /></RequireAuth>} />
+          <Route
+            path="/ask"
+            element={
+              <RequireAuth>
+                <NewQuestionForm />
+              </RequireAuth>
+            }
+          />
 
           {/* Enhanced user profile */}
           <Route
@@ -113,8 +153,10 @@ export default function App() {
             }
           />
 
+          {/* FAQs */}
           <Route path="/faq" element={<FAQScreen currentUser={currentUser} />} />
 
+          {/* Notifications */}
           <Route
             path="/notifications"
             element={
@@ -123,7 +165,9 @@ export default function App() {
                   notifications={notifications}
                   onMarkAsRead={(id) =>
                     setNotifications((prev) =>
-                      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+                      prev.map((n) =>
+                        n.id === id ? { ...n, read: true } : n
+                      )
                     )
                   }
                 />
@@ -131,14 +175,21 @@ export default function App() {
             }
           />
 
+          {/* Admin Panel */}
           <Route
             path="/admin"
             element={
               <RequireAdmin>
-                <AdminPanel questions={mockQuestions} users={mockUsers} currentUser={currentUser} />
+                <AdminPanel
+                  questions={mockQuestions}
+                  users={mockUsers}
+                  currentUser={currentUser}
+                />
               </RequireAdmin>
             }
           />
+
+          {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Alert, AlertDescription } from "./ui/alert";
 import { authApi } from "../services/api";
 
 export function PasswordReset({ onClose, onSuccess }) {
@@ -21,7 +20,7 @@ export function PasswordReset({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     email: "",
     token: "",
-    newPassword: "",
+    password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
@@ -29,7 +28,7 @@ export function PasswordReset({ onClose, onSuccess }) {
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePassword = (password) => password.length >= 8;
 
-  // --- Step 1: Request reset
+  // Step 1: Request reset email
   const handleRequestReset = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -53,43 +52,33 @@ export function PasswordReset({ onClose, onSuccess }) {
     }
   };
 
-  // --- Step 2: Verify OTP
-  const handleVerifyToken = async (e) => {
+  // Step 2: User pastes token from email
+  const handleVerifyToken = (e) => {
     e.preventDefault();
     setErrors({});
-    if (formData.token.length !== 6) {
-      setErrors({ token: "Please enter the 6-digit code" });
+    if (!formData.token) {
+      setErrors({ token: "Please enter the reset token from your email" });
       return;
     }
-
-    // Instead of calling backend here, move directly to reset step
-    // since reset endpoint will validate OTP or token
     setCurrentStep("reset");
   };
 
-  // --- Step 3: Reset password
+  // Step 3: Reset password
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setErrors({});
-    if (!validatePassword(formData.newPassword)) {
-      setErrors({
-        newPassword: "Password must be at least 8 characters long",
-      });
+    if (!validatePassword(formData.password)) {
+      setErrors({ password: "Password must be at least 8 characters long" });
       return;
     }
-    if (formData.newPassword !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       setErrors({ confirmPassword: "Passwords do not match" });
       return;
     }
 
     setIsLoading(true);
     try {
-      // Here we assume OTP flow
-      await authApi.resetPasswordWithOtp(
-        formData.email,
-        formData.token,
-        formData.newPassword
-      );
+      await authApi.resetPassword(formData.token, formData.password);
       setCurrentStep("success");
       setTimeout(() => {
         onSuccess?.();
@@ -97,7 +86,7 @@ export function PasswordReset({ onClose, onSuccess }) {
       }, 2000);
     } catch (err) {
       setErrors({
-        newPassword:
+        password:
           err.response?.data?.error ||
           "Failed to reset password. Please try again.",
       });
@@ -106,7 +95,6 @@ export function PasswordReset({ onClose, onSuccess }) {
     }
   };
 
-  // --- Render steps
   const renderStep = () => {
     switch (currentStep) {
       case "request":
@@ -118,10 +106,10 @@ export function PasswordReset({ onClose, onSuccess }) {
                 <span>Reset Your Password</span>
               </CardTitle>
               <CardDescription>
-                Enter your email address and we'll send you a verification code.
+                Enter your email address and we’ll send you a reset link.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <Label>Email Address</Label>
               <Input
                 type="email"
@@ -138,21 +126,11 @@ export function PasswordReset({ onClose, onSuccess }) {
               )}
             </CardContent>
             <CardFooter className="flex space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={onClose}
-                disabled={isLoading}
-              >
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                disabled={isLoading}
-              >
-                {isLoading ? "Sending..." : "Send Reset Code"}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Sending..." : "Send Reset Link"}
               </Button>
             </CardFooter>
           </form>
@@ -162,52 +140,28 @@ export function PasswordReset({ onClose, onSuccess }) {
         return (
           <form onSubmit={handleVerifyToken}>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>Check Your Email</span>
-              </CardTitle>
+              <CardTitle>Check Your Email</CardTitle>
               <CardDescription>
-                Enter the 6-digit code sent to <strong>{formData.email}</strong>.
+                Paste the reset token from your email below.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Input
                 type="text"
-                placeholder="Enter 6-digit code"
+                placeholder="Paste reset token"
                 value={formData.token}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    token: e.target.value.replace(/\D/g, "").substring(0, 6),
-                  })
+                  setFormData({ ...formData, token: e.target.value })
                 }
-                className={`text-center text-2xl tracking-wider ${
-                  errors.token ? "border-red-500" : ""
-                }`}
-                maxLength={6}
+                className={errors.token ? "border-red-500" : ""}
                 required
               />
               {errors.token && (
                 <p className="text-sm text-red-600">{errors.token}</p>
               )}
             </CardContent>
-            <CardFooter className="flex space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setCurrentStep("request")}
-                disabled={isLoading}
-              >
-                Back
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                disabled={isLoading || formData.token.length !== 6}
-              >
-                Continue
-              </Button>
+            <CardFooter>
+              <Button type="submit">Continue</Button>
             </CardFooter>
           </form>
         );
@@ -216,22 +170,19 @@ export function PasswordReset({ onClose, onSuccess }) {
         return (
           <form onSubmit={handleResetPassword}>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Lock className="w-5 h-5 text-purple-600" />
-                <span>Create New Password</span>
-              </CardTitle>
+              <CardTitle>Create New Password</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <Label>New Password</Label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter new password"
-                  value={formData.newPassword}
+                  value={formData.password}
                   onChange={(e) =>
-                    setFormData({ ...formData, newPassword: e.target.value })
+                    setFormData({ ...formData, password: e.target.value })
                   }
-                  className={errors.newPassword ? "border-red-500" : ""}
+                  className={errors.password ? "border-red-500" : ""}
                   required
                 />
                 <Button
@@ -244,8 +195,8 @@ export function PasswordReset({ onClose, onSuccess }) {
                   {showPassword ? <EyeOff /> : <Eye />}
                 </Button>
               </div>
-              {errors.newPassword && (
-                <p className="text-sm text-red-600">{errors.newPassword}</p>
+              {errors.password && (
+                <p className="text-sm text-red-600">{errors.password}</p>
               )}
               <Label>Confirm Password</Label>
               <Input
@@ -266,11 +217,7 @@ export function PasswordReset({ onClose, onSuccess }) {
               )}
             </CardContent>
             <CardFooter>
-              <Button
-                type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isLoading}
-              >
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Updating..." : "Update Password"}
               </Button>
             </CardFooter>
@@ -287,12 +234,7 @@ export function PasswordReset({ onClose, onSuccess }) {
             <CardDescription className="mb-6">
               You can now sign in with your new password.
             </CardDescription>
-            <Button
-              onClick={onClose}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Continue to Sign In
-            </Button>
+            <Button onClick={onClose}>Continue to Sign In</Button>
           </div>
         );
     }

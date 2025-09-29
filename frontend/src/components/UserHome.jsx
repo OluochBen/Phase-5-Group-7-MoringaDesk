@@ -8,7 +8,8 @@ import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { QuestionCard } from "./QuestionCard";
-import { mockQuestions, mockUsers } from "../data/mockData";
+import { useQuestions } from "../context/QuestionsContext";
+import { mockUsers } from "../data/mockData";
 
 export function UserHome({ currentUser }) {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export function UserHome({ currentUser }) {
   const [sort, setSort] = useState("newest");
   const [tag, setTag] = useState("");
 
-  const questions = mockQuestions; // fallback mock data for UX
+  const { questions } = useQuestions();
 
   const stats = useMemo(() => {
     const total = questions.length;

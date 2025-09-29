@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { problemsApi } from "../services/api";
+import { useQuestions } from "../context/QuestionsContext";
 import { useNavigate } from "react-router-dom";
 
 export function AskQuestionDialog({ currentUser }) {
@@ -18,6 +19,7 @@ export function AskQuestionDialog({ currentUser }) {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { addQuestion } = useQuestions();
 
   const DEMO_MODE = !import.meta.env.VITE_API_BASE;
 
@@ -28,6 +30,24 @@ export function AskQuestionDialog({ currentUser }) {
     setError("");
     try {
       if (DEMO_MODE) {
+        const newQuestion = {
+          id: String(Date.now()),
+          title: title.trim(),
+          body: description.trim(),
+          tags: selectedTags,
+          votes: 0,
+          views: 0,
+          bounty: 0,
+          timestamp: new Date(),
+          lastActivity: new Date(),
+          status: "open",
+          isFollowing: false,
+          answers: [],
+          authorId: currentUser?.id,
+          authorName: currentUser?.name || "Anonymous",
+          authorReputation: 0,
+        };
+        addQuestion(newQuestion);
         setOpen(false);
         navigate("/dashboard");
         return;
@@ -35,6 +55,25 @@ export function AskQuestionDialog({ currentUser }) {
       const created = await problemsApi.create({ title: title.trim(), description: description.trim(), problem_type: type, tag_ids: [] });
       const obj = created.problem ?? created;
       const id = obj?.id;
+      if (id) {
+        // optimistic add to list so it appears on home/profile immediately
+        addQuestion({
+          id: String(id),
+          title: obj.title || title.trim(),
+          body: obj.description || description.trim(),
+          tags: selectedTags,
+          votes: 0,
+          views: 0,
+          bounty: 0,
+          timestamp: new Date(),
+          lastActivity: new Date(),
+          status: obj.status || "open",
+          isFollowing: false,
+          answers: [],
+          authorId: currentUser?.id,
+          authorName: currentUser?.name || "",
+        });
+      }
       setOpen(false);
       if (id) navigate(`/questions/${id}`); else navigate("/dashboard");
     } catch (err) {

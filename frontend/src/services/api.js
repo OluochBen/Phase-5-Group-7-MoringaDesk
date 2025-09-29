@@ -34,6 +34,11 @@ export const problemsApi = {
 
   create: ({ title, description, problem_type, tag_ids = [] }) =>
     api.post("/problems", { title, description, problem_type, tag_ids }).then((r) => r.data),
+
+  update: (id, { title, description, problem_type, tag_ids }) =>
+    api.put(`/problems/${id}`, { title, description, problem_type, tag_ids }).then((r) => r.data),
+
+  remove: (id) => api.delete(`/problems/${id}`).then((r) => r.data),
 };
 
 // ---- Solutions (for a given problem)

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { QuestionsProvider } from "./context/QuestionsContext";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
 // layout & shared
@@ -19,6 +20,7 @@ import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { mockNotifications, mockQuestions, mockUsers } from "./data/mockData";
+import { authApi } from "./services/api";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,6 +41,21 @@ export default function App() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Restore session on refresh
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    (async () => {
+      try {
+        const me = await authApi.me();
+        setCurrentUser(me.user ?? me);
+      } catch (e) {
+        // invalid token, clear
+        localStorage.removeItem("access_token");
+      }
+    })();
+  }, []);
+
   const RequireAuth = ({ children }) => {
     if (!currentUser) return <Navigate to="/login" replace />;
     return children;
@@ -51,6 +68,7 @@ export default function App() {
   };
 
   return (
+    <QuestionsProvider>
     <div className="min-h-screen bg-background">
       {/* Navbar */}
       {currentUser ? (
@@ -68,8 +86,8 @@ export default function App() {
       )}
 
       {/* Routes */}
-      <main className="pt-16">
-        <Routes>
+        <main className="pt-16">
+          <Routes>
           <Route path="/" element={<Homepage />} />
 
           <Route path="/login" element={<AuthPage defaultTab="login" onLogin={handleLogin} onRegister={handleLogin} />} />
@@ -140,8 +158,8 @@ export default function App() {
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+          </Routes>
+        </main>
 
       {/* Footer for public pages */}
       {!currentUser && <Footer />}
@@ -155,5 +173,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </QuestionsProvider>
   );
 }

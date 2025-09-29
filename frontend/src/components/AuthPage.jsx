@@ -24,9 +24,10 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ✅ Only "student" or "admin"
   const demoAccounts = useMemo(
     () => [
-      { id: "user", name: "John Doe", email: "john@example.com", password: "password123", role: "user" },
+      { id: "student", name: "John Doe", email: "john@example.com", password: "password123", role: "student" },
       { id: "admin", name: "Jane Smith", email: "admin@moringadesk.com", password: "admin123", role: "admin" },
     ],
     []
@@ -42,18 +43,22 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
       if (DEMO_MODE) {
         const acc = demoAccounts.find((a) => a.email === email && a.password === password);
         if (!acc) throw new Error("Invalid demo credentials");
+
         const matched = mockUsers.find((u) => u.email === acc.email) || {
           id: "demo",
           name: acc.name,
           email: acc.email,
           role: acc.role,
         };
+
         localStorage.setItem("access_token", "demo-token");
         onLogin?.(matched);
       } else {
         const { access_token } = await authApi.login(email, password);
         localStorage.setItem("access_token", access_token);
+
         const me = await authApi.me();
+        // backend returns { user: {...} } or user object
         onLogin?.(me.user ?? me);
       }
       navigate("/dashboard");
@@ -74,12 +79,14 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
     setLoading(true);
     try {
       if (DEMO_MODE) {
-        const newUser = { id: String(Date.now()), name, email, role: "user" };
+        const newUser = { id: String(Date.now()), name, email, role: "student" };
         localStorage.setItem("access_token", "demo-token");
         onRegister?.(newUser);
       } else {
-        const { access_token } = await authApi.register(name, email, password);
+        // ✅ send "student" as default role
+        const { access_token } = await authApi.register(name, email, password, "student");
         localStorage.setItem("access_token", access_token);
+
         const me = await authApi.me();
         onRegister?.(me.user ?? me);
       }
@@ -138,6 +145,7 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                     <div className="text-xs text-muted-foreground">{acc.email}</div>
                   </div>
                 </div>
+                {/* ✅ role is always a string now */}
                 <Badge variant={acc.role === "admin" ? "destructive" : "secondary"}>
                   {acc.role}
                 </Badge>
@@ -157,16 +165,17 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                 </TabsList>
               </div>
 
+              {/* Login */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-3">
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
                   </div>
                   <div className="relative">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                    <button type="button" aria-label="Toggle password" className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((s) => !s)}>
+                    <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" />
+                    <button type="button" className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((s) => !s)}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -174,7 +183,9 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                     <button type="button" className="text-green-700 hover:underline" onClick={() => navigate("/reset-password")}>
                       Forgot your password?
                     </button>
-                    <button type="button" className="text-muted-foreground hover:underline" onClick={() => setTab("signup")}>Create account</button>
+                    <button type="button" className="text-muted-foreground hover:underline" onClick={() => setTab("signup")}>
+                      Create account
+                    </button>
                   </div>
                   {error && <div className="text-red-600 text-sm">{error}</div>}
                   <Button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700">
@@ -183,26 +194,27 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                 </form>
               </TabsContent>
 
+              {/* Signup */}
               <TabsContent value="signup">
                 <form onSubmit={handleRegister} className="space-y-3">
                   <div>
                     <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Enter your full name" value={name} onChange={(e) => setName(e.target.value)} />
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your full name" />
                   </div>
                   <div>
                     <Label htmlFor="email2">Email</Label>
-                    <Input id="email2" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <Input id="email2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
                   </div>
                   <div className="relative">
                     <Label htmlFor="password2">Password</Label>
-                    <Input id="password2" type={showPassword ? "text" : "password"} placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                    <button type="button" aria-label="Toggle password" className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((s) => !s)}>
+                    <Input id="password2" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" />
+                    <button type="button" className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((s) => !s)}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                   <div>
                     <Label htmlFor="confirm">Confirm Password</Label>
-                    <Input id="confirm" type={showPassword ? "text" : "password"} placeholder="Confirm your password" value={confirm} onChange={(e) => setConfirm(e.target.value)} aria-invalid={confirm && confirm !== password ? true : undefined} />
+                    <Input id="confirm" type={showPassword ? "text" : "password"} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirm your password" />
                   </div>
                   {error && <div className="text-red-600 text-sm">{error}</div>}
                   <Button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700">

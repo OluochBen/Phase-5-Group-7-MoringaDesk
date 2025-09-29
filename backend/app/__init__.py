@@ -28,19 +28,23 @@ def create_app():
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-secret-string")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
     app.config["JWT_ALGORITHM"] = "HS256"
+
     if is_pg:
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"connect_args": {"sslmode": "require"}}
 
     # Extensions
     db.init_app(app)
-    from . import models            
+    from . import models
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # ✅ CORS: allow frontend (5173) to call backend (5000)
+    # ✅ CORS: allow local dev + deployed frontend
     CORS(
         app,
-        resources={r"/*": {"origins": ["http://localhost:5173"]}},
+        resources={r"/*": {"origins": [
+            "http://localhost:5173",                  # local frontend
+            "https://moringadesk-gcvu.onrender.com"   # deployed frontend
+        ]}},
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]

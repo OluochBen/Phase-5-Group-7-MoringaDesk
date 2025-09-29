@@ -9,7 +9,7 @@ MoringaDesk curates problems and solutions that students face. Each problem can 
  MoringaDesk is a collaborative platform designed to help students resolve recurring technical challenges by curating problems and community-driven solutions. Built with an API-first approach, it emphasizes scalability, searchability, and real-time feedback.
 
  ## Quick Links
-- Frontend: https://phase-5-group-7-moringadesk-1.onrender.com/
+- Frontend: https://moringadesk-gcvu.onrender.com/
 - Backend: https://phase-5-group-7-moringadesk.onrender.com/ping
 
 ## Tech Stack

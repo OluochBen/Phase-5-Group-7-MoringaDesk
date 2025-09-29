@@ -1,9 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function DashboardPage() {
   const navigate = useNavigate();
 
+  // User from localStorage or fallback
+  const [user, setUser] = useState({ name: "Student" });
+
+  // Load user info on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
+  }, []);
+
+  // Stats (can be replaced with real data / API calls)
+  const [stats, setStats] = useState({
+    questions: 12,
+    answers: 34,
+    votes: 58,
+  });
+
+  // Recent questions and notifications (static for now)
   const [recentQuestions] = useState([
     { id: 1, title: "How do I fix a CORS error in React?" },
     { id: 2, title: "Best practices for structuring a Flask API" },
@@ -62,7 +79,10 @@ function DashboardPage() {
         <header className="bg-white shadow-md p-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Dashboard</h2>
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              localStorage.removeItem("user"); // clear user on logout
+              navigate("/login");
+            }}
             className="bg-red-500 text-white px-4 py-2 rounded-md"
           >
             Logout
@@ -71,7 +91,9 @@ function DashboardPage() {
 
         {/* Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
-          <h2 className="text-2xl font-bold mb-6">Welcome, Student 👋</h2>
+          <h2 className="text-2xl font-bold mb-6">
+            Welcome, {user.name} 👋
+          </h2>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -101,15 +123,15 @@ function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold">Questions</h3>
-              <p className="text-2xl font-bold">12</p>
+              <p className="text-2xl font-bold">{stats.questions}</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold">Answers</h3>
-              <p className="text-2xl font-bold">34</p>
+              <p className="text-2xl font-bold">{stats.answers}</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold">Votes</h3>
-              <p className="text-2xl font-bold">58</p>
+              <p className="text-2xl font-bold">{stats.votes}</p>
             </div>
           </div>
 
@@ -119,7 +141,11 @@ function DashboardPage() {
               <h3 className="text-lg font-semibold mb-4">Recent Questions</h3>
               <ul className="space-y-2">
                 {recentQuestions.map((q) => (
-                  <li key={q.id} className="border-b pb-2">
+                  <li
+                    key={q.id}
+                    className="border-b pb-2 cursor-pointer hover:text-blue-600"
+                    onClick={() => navigate(`/questions/${q.id}`)}
+                  >
                     {q.title}
                   </li>
                 ))}

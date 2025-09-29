@@ -12,13 +12,13 @@ import FAQsPage from "./pages/Questions/FAQsPage";
 import QuestionPage from "./pages/Questions/QuestionPage";
 import UserProfilePage from "./pages/Profile/UserProfilePage";
 import AdminProfile from "./pages/Admin/AdminProfile";
-import Navbar from "./components/Navbar"; 
+import ForgotPassword from "./pages/Auth/ForgotPassword";
 
 function App() {
   return (
     <>
       {/* ✅ Navbar always visible */}
-      <Navbar />
+      
 
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -32,6 +32,7 @@ function App() {
         <Route path="/question/:id" element={<QuestionPage />} />
         <Route path="/profile" element={<UserProfilePage />} />
         <Route path="/admin-profile" element={<AdminProfile />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </>
   );

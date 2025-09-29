@@ -1,21 +1,33 @@
 export default function FAQsPage() {
   const faqs = [
-    { question: "What is MoringaDesk?", answer: "A Q&A platform for students." },
-    { question: "How do I ask a question?", answer: "Go to the 'Ask Question' page and fill the form." },
-    { question: "Is registration required?", answer: "Yes, you need to register to ask or answer questions." },
+    {
+      question: "How do I reset my password?",
+      answer: "Go to the login page and click on 'Forgot Password'.",
+    },
+    {
+      question: "Can I edit my question?",
+      answer: "Yes, go to your question and click 'Edit'.",
+    },
   ];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Frequently Asked Questions</h1>
-      <ul className="space-y-4">
-        {faqs.map((faq, index) => (
-          <li key={index} className="bg-white p-4 rounded shadow">
-            <h2 className="font-semibold">{faq.question}</h2>
-            <p className="mt-2 text-gray-700">{faq.answer}</p>
-          </li>
-        ))}
-      </ul>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl">
+        <h2 className="text-2xl font-bold text-center mb-6 text-green-600">
+          Frequently Asked Questions
+        </h2>
+
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="border p-4 rounded-lg">
+              <h3 className="font-semibold text-green-700 mb-2">
+                {faq.question}
+              </h3>
+              <p className="text-gray-700">{faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

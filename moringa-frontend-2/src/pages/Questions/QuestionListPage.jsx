@@ -1,28 +1,49 @@
 import { Link } from "react-router-dom";
 
+const dummyQuestions = [
+  {
+    id: 1,
+    title: "How do I center a div in Tailwind CSS?",
+    tags: ["CSS", "Tailwind"],
+  },
+  {
+    id: 2,
+    title: "What is useEffect in React?",
+    tags: ["React", "Hooks"],
+  },
+];
+
 export default function QuestionListPage() {
-  const questions = [
-    { id: 1, title: "How do I fix a CORS error in React?" },
-    { id: 2, title: "Best practices for structuring a Flask API" },
-    { id: 3, title: "How to set up Redux Toolkit in a React project?" },
-  ];
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">All Questions</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl">
+        <h2 className="text-2xl font-bold text-center mb-6 text-green-600">
+          All Questions
+        </h2>
 
-      <ul className="space-y-4">
-        {questions.map((q) => (
-          <li
-            key={q.id}
-            className="p-4 bg-white rounded shadow hover:bg-gray-50"
-          >
-            <Link to={`/questions/${q.id}`} className="text-blue-600 font-semibold">
-              {q.title}
-            </Link>
-          </li>
-        ))}
-      </ul>
+        <ul className="space-y-4">
+          {dummyQuestions.map((q) => (
+            <li
+              key={q.id}
+              className="border rounded-lg p-4 hover:shadow transition"
+            >
+              <Link to={`/questions/${q.id}`} className="text-lg font-semibold text-green-700 hover:underline">
+                {q.title}
+              </Link>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {q.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-sm px-2 py-1 bg-green-100 text-green-800 rounded-full"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

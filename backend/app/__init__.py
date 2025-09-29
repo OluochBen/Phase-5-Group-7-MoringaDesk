@@ -1,4 +1,3 @@
-# backend/app/__init__.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -34,17 +33,18 @@ def create_app():
 
     # Extensions
     db.init_app(app)
-    from . import models
+    from . import models  # ensure models are imported for migrations
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # ✅ CORS: allow local dev + deployed frontend
+    # CORS
+    allowed_origins = [
+        "http://localhost:5173",
+        "https://moringadesk-gcvu.onrender.com",
+    ]
     CORS(
         app,
-        resources={r"/*": {"origins": [
-            "http://localhost:5173",                  # local frontend
-            "https://moringadesk-gcvu.onrender.com"   # deployed frontend
-        ]}},
+        resources={r"/*": {"origins": allowed_origins}},
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]

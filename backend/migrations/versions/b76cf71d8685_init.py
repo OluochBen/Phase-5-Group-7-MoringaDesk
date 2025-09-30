@@ -1,8 +1,8 @@
-"""baseline
+"""init
 
-Revision ID: 6cf8ab93a08d
+Revision ID: b76cf71d8685
 Revises: 
-Create Date: 2025-09-21 07:27:07.783834
+Create Date: 2025-09-29 23:39:03.747636
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6cf8ab93a08d'
+revision = 'b76cf71d8685'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,6 +34,17 @@ def upgrade():
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
+    )
+    op.create_table('audit_logs',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('action', sa.String(length=100), nullable=False),
+    sa.Column('target', sa.String(length=255), nullable=False),
+    sa.Column('reason', sa.String(length=255), nullable=True),
+    sa.Column('admin_id', sa.Integer(), nullable=False),
+    sa.Column('admin_name', sa.String(length=100), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['admin_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('faqs',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -74,6 +85,17 @@ def upgrade():
     sa.Column('problem_type', sa.String(length=20), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('reports',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('target_type', sa.String(length=50), nullable=False),
+    sa.Column('target_id', sa.Integer(), nullable=False),
+    sa.Column('reason', sa.String(length=255), nullable=False),
+    sa.Column('status', sa.String(length=20), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -138,10 +160,12 @@ def downgrade():
     op.drop_table('related_questions')
     op.drop_table('question_tags')
     op.drop_table('follows')
+    op.drop_table('reports')
     op.drop_table('questions')
     op.drop_table('password_reset_tokens')
     op.drop_table('notifications')
     op.drop_table('faqs')
+    op.drop_table('audit_logs')
     op.drop_table('users')
     op.drop_table('tags')
     # ### end Alembic commands ###

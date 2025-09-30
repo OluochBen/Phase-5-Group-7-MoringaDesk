@@ -9,11 +9,21 @@ from .follow import Follow
 from .notification import Notification
 from .faq import FAQ
 from .password_reset_token import PasswordResetToken
-
-
+from .report import Report
+from .audit_log import AuditLog
 
 __all__ = [
-    'User', 'Question', 'Solution', 'Vote', 'Tag', 
-    'QuestionTag', 'RelatedQuestion', 'Follow', 
-    'Notification', 'FAQ', 'PasswordResetToken'
+    "User",
+    "Question",
+    "Solution",
+    "Vote",
+    "Tag",
+    "QuestionTag",
+    "RelatedQuestion",
+    "Follow",
+    "Notification",
+    "FAQ",
+    "PasswordResetToken",
+    "Report",
+    "AuditLog",
 ]

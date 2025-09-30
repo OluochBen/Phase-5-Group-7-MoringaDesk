@@ -35,7 +35,11 @@ def create_app():
     # --- CORS ---
     CORS(
         app,
-        resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}},
+        resources={r"/*": {"origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://moringadesk-gcvu.onrender.com"  # ✅ deployed frontend
+        ]}},
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]

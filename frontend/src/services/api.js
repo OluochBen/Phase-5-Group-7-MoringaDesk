@@ -1,33 +1,28 @@
-// src/services/api.js
 import axios from "axios";
-
-// ✅ Base URL: use VITE_API_BASE if set, else default to /api (Vite proxy in dev)
-const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  "https://phase-5-group-7-moringadesk.onrender.com";
 
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
 });
 
-// ✅ Attach JWT if present
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// ---- Health
 export const healthApi = {
   ping: () => api.get("/ping").then((r) => r.data),
 };
 
-// ---- FAQs
 export const faqApi = {
   list: ({ page = 1, per_page = 10 } = {}) =>
     api.get("/faqs", { params: { page, per_page } }).then((r) => r.data),
 };
 
-// ---- Auth
 export const authApi = {
   register: (name, email, password, role = "user") =>
     api.post("/auth/register", { name, email, password, role }).then((r) => r.data),
@@ -44,7 +39,6 @@ export const authApi = {
     api.post("/auth/reset-password", { token, password }).then((r) => r.data),
 };
 
-// ---- Problems (Questions)
 export const problemsApi = {
   list: ({ page = 1, per_page = 10, problem_type, search, sort } = {}) =>
     api
@@ -59,7 +53,6 @@ export const problemsApi = {
       .then((r) => r.data),
 };
 
-// ---- Solutions (Answers)
 export const solutionsApi = {
   list: (problemId, { page = 1, per_page = 10 } = {}) =>
     api
@@ -70,7 +63,6 @@ export const solutionsApi = {
     api.post(`/problems/${problemId}/solutions`, { content }).then((r) => r.data),
 };
 
-// ---- Votes (on solutions)
 export const votesApi = {
   voteSolution: (solutionId, vote_type) =>
     api.post(`/solutions/${solutionId}/vote`, { vote_type }).then((r) => r.data),
@@ -82,7 +74,6 @@ export const votesApi = {
     api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),
 };
 
-// ---- Notifications
 export const notificationsApi = {
   list: ({ page = 1, per_page = 10, unread_only = false } = {}) =>
     api
@@ -96,7 +87,6 @@ export const notificationsApi = {
   markAllRead: () => api.put(`/notifications/read-all`).then((r) => r.data),
 };
 
-// ---- Tags
 export const tagsApi = {
   list: ({ q = "", page = 1, per_page = 20 } = {}) =>
     api.get("/tags", { params: { q, page, per_page } }).then((r) => r.data),
@@ -104,7 +94,6 @@ export const tagsApi = {
   create: (name) => api.post("/tags", { name }).then((r) => r.data),
 };
 
-// ---- Profiles
 export const profileApi = {
   get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),
 };

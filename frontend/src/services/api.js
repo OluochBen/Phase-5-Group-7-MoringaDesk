@@ -109,4 +109,5 @@ export const profileApi = {
   get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),
 };
 
+// ✅ Restore default export so old imports still work
 export default api;

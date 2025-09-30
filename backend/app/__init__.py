@@ -1,4 +1,3 @@
-# app/__init__.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -34,15 +33,13 @@ def create_app():
     jwt.init_app(app)
 
     # --- CORS ---
-    allowed_origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://moringadesk-gcvu.onrender.com",   # 🚀 Production frontend
-    ]
-
     CORS(
         app,
-        resources={r"/*": {"origins": allowed_origins}},
+        resources={r"/*": {"origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://moringadesk-gcvu.onrender.com"  # ✅ deployed frontend
+        ]}},
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]

@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
@@ -12,7 +13,7 @@ import PingProbe from "./components/dev/PingProbe";
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
 import UserHome from "./components/UserHome";
-import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails";
+import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails"; // ✅ use only this
 import { AdminPanel } from "./components/AdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
@@ -150,6 +151,26 @@ export default function App() {
             element={
               <RequireAuth>
                 <UserHome currentUser={currentUser} />
+              </RequireAuth>
+            }
+          />
+
+          {/* Ask a Question */}
+          <Route
+            path="/ask"
+            element={
+              <RequireAuth>
+                <NewQuestionForm />
+              </RequireAuth>
+            }
+          />
+
+          {/* Single Question - ✅ only EnhancedQuestionDetails */}
+          <Route
+            path="/questions/:id"
+            element={
+              <RequireAuth>
+                <EnhancedQuestionDetails currentUser={currentUser} />
               </RequireAuth>
             }
           />

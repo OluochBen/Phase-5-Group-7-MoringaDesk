@@ -17,8 +17,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ Handle expired/invalid tokens (422 or 401)
-// Clears token and redirects to login
+// ✅ Handle expired/invalid tokens
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -39,6 +38,7 @@ function storeToken(token) {
 
 // ---------------------- API ENDPOINTS ----------------------
 
+// ✅ Health check
 export const healthApi = {
   ping: () => api.get("/ping").then((r) => r.data),
 };
@@ -63,7 +63,6 @@ export const authApi = {
 
   me: () =>
     api.get("/auth/me").then((r) => {
-      // ✅ Always return user object (consistent)
       return r.data.user ?? r.data;
     }),
 
@@ -133,4 +132,5 @@ export const profileApi = {
   get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),
 };
 
+// ✅ default axios instance
 export default api;

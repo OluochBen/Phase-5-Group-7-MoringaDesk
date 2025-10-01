@@ -15,7 +15,7 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState(defaultTab);
 
-  // shared form state
+  // form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,75 +24,119 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ Only "student" or "admin"
+  // ✅ Demo accounts
   const demoAccounts = useMemo(
     () => [
-      { id: "student", name: "John Doe", email: "john@example.com", password: "password123", role: "student" },
-      { id: "admin", name: "Jane Smith", email: "admin@moringadesk.com", password: "admin123", role: "admin" },
+      {
+        id: "student",
+        name: "John Doe",
+        email: "john@example.com",
+        password: "password123",
+        role: "student",
+      },
+      {
+        id: "admin",
+        name: "Jane Smith",
+        email: "admin@moringadesk.com",
+        password: "admin123",
+        role: "admin",
+      },
     ],
     []
   );
 
   const DEMO_MODE = !import.meta.env.VITE_API_BASE;
 
+  // ✅ redirect users by role
+  function redirectByRole(user) {
+    if (user.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/dashboard");
+    }
+  }
+
+  // --- LOGIN ---
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
+      let user;
+
       if (DEMO_MODE) {
-        const acc = demoAccounts.find((a) => a.email === email && a.password === password);
+        const acc = demoAccounts.find(
+          (a) => a.email === email && a.password === password
+        );
         if (!acc) throw new Error("Invalid demo credentials");
 
-        const matched = mockUsers.find((u) => u.email === acc.email) || {
-          id: "demo",
-          name: acc.name,
-          email: acc.email,
-          role: acc.role,
-        };
+        user =
+          mockUsers.find((u) => u.email === acc.email) || {
+            id: "demo",
+            name: acc.name,
+            email: acc.email,
+            role: acc.role,
+          };
 
         localStorage.setItem("access_token", "demo-token");
-        onLogin?.(matched);
+        onLogin?.(user);
       } else {
-        const { access_token } = await authApi.login(email, password);
-        localStorage.setItem("access_token", access_token);
-
+        // 🔑 login with backend
+        const res = await authApi.login(email, password);
         const me = await authApi.me();
-        // backend returns { user: {...} } or user object
-        onLogin?.(me.user ?? me);
+        user = me.user ?? me;
+        onLogin?.(user);
       }
-      navigate("/dashboard");
+
+      redirectByRole(user);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || err.message || "Login failed");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Login failed"
+      );
     } finally {
       setLoading(false);
     }
   }
 
+  // --- REGISTER ---
   async function handleRegister(e) {
     e.preventDefault();
     setError("");
+
     if (password !== confirm) {
       setError("Passwords do not match");
       return;
     }
-    setLoading(true);
-    try {
-      if (DEMO_MODE) {
-        const newUser = { id: String(Date.now()), name, email, role: "student" };
-        localStorage.setItem("access_token", "demo-token");
-        onRegister?.(newUser);
-      } else {
-        // ✅ send "student" as default role
-        const { access_token } = await authApi.register(name, email, password, "student");
-        localStorage.setItem("access_token", access_token);
 
+    setLoading(true);
+
+    try {
+      let user;
+
+      if (DEMO_MODE) {
+        user = { id: String(Date.now()), name, email, role: "student" };
+        localStorage.setItem("access_token", "demo-token");
+        onRegister?.(user);
+      } else {
+        // always student unless changed manually
+        await authApi.register(name, email, password, "student");
         const me = await authApi.me();
-        onRegister?.(me.user ?? me);
+        user = me.user ?? me;
+        onRegister?.(user);
       }
-      navigate("/dashboard");
+
+      redirectByRole(user);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || err.message || "Registration failed");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Registration failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -101,13 +145,15 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-blue-50 pt-24 pb-16 px-4">
       <div className="max-w-md mx-auto">
-        {/* Brand and greeting */}
+        {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mb-3">
             <span className="text-white font-bold">M</span>
           </div>
           <h1 className="text-xl font-semibold">MoringaDesk</h1>
-          <p className="text-xs text-muted-foreground">Your Q&A Platform for Learning</p>
+          <p className="text-xs text-muted-foreground">
+            Your Q&A Platform for Learning
+          </p>
 
           <div className="mt-4 flex flex-col items-center">
             <Avatar className="w-16 h-16 border-4 border-white shadow-md">
@@ -115,17 +161,23 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
             </Avatar>
             <div className="mt-2 inline-flex items-center space-x-1 text-green-700">
               <CheckCircle2 className="w-4 h-4" />
-              <span className="text-sm font-medium">Welcome back, study buddy!</span>
+              <span className="text-sm font-medium">
+                Welcome back, study buddy!
+              </span>
             </div>
-            <span className="text-xs text-muted-foreground">Ready to learn something new today?</span>
+            <span className="text-xs text-muted-foreground">
+              Ready to learn something new today?
+            </span>
           </div>
         </div>
 
-        {/* Quick demo access */}
+        {/* Quick demo accounts */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-base">Quick Demo Access</CardTitle>
-            <p className="text-xs text-muted-foreground">Try the platform with demo accounts</p>
+            <p className="text-xs text-muted-foreground">
+              Try the platform with demo accounts
+            </p>
           </CardHeader>
           <CardContent className="space-y-2">
             {demoAccounts.map((acc) => (
@@ -142,11 +194,14 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                   <span className="inline-block w-2 h-2 rounded-full bg-green-600" />
                   <div className="text-left">
                     <div className="text-sm font-medium">{acc.name}</div>
-                    <div className="text-xs text-muted-foreground">{acc.email}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {acc.email}
+                    </div>
                   </div>
                 </div>
-                {/* ✅ role is always a string now */}
-                <Badge variant={acc.role === "admin" ? "destructive" : "secondary"}>
+                <Badge
+                  variant={acc.role === "admin" ? "destructive" : "secondary"}
+                >
                   {acc.role}
                 </Badge>
               </button>
@@ -165,59 +220,130 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                 </TabsList>
               </div>
 
-              {/* Login */}
+              {/* Login Form */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-3">
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                    />
                   </div>
                   <div className="relative">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" />
-                    <button type="button" className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((s) => !s)}>
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((s) => !s)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <button type="button" className="text-green-700 hover:underline" onClick={() => navigate("/reset-password")}>
+                    <button
+                      type="button"
+                      className="text-green-700 hover:underline"
+                      onClick={() => navigate("/reset-password")}
+                    >
                       Forgot your password?
                     </button>
-                    <button type="button" className="text-muted-foreground hover:underline" onClick={() => setTab("signup")}>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:underline"
+                      onClick={() => setTab("signup")}
+                    >
                       Create account
                     </button>
                   </div>
-                  {error && <div className="text-red-600 text-sm">{error}</div>}
-                  <Button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700">
+                  {error && (
+                    <div className="text-red-600 text-sm">{error}</div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
                     {loading ? "Signing in…" : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
 
-              {/* Signup */}
+              {/* Register Form */}
               <TabsContent value="signup">
                 <form onSubmit={handleRegister} className="space-y-3">
                   <div>
                     <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your full name" />
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Enter your full name"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="email2">Email</Label>
-                    <Input id="email2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
+                    <Input
+                      id="email2"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                    />
                   </div>
                   <div className="relative">
                     <Label htmlFor="password2">Password</Label>
-                    <Input id="password2" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" />
-                    <button type="button" className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((s) => !s)}>
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <Input
+                      id="password2"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 bottom-2.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((s) => !s)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                   <div>
                     <Label htmlFor="confirm">Confirm Password</Label>
-                    <Input id="confirm" type={showPassword ? "text" : "password"} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirm your password" />
+                    <Input
+                      id="confirm"
+                      type={showPassword ? "text" : "password"}
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      placeholder="Confirm your password"
+                    />
                   </div>
-                  {error && <div className="text-red-600 text-sm">{error}</div>}
-                  <Button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700">
+                  {error && (
+                    <div className="text-red-600 text-sm">{error}</div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
                     {loading ? "Creating…" : "Create Account"}
                   </Button>
                 </form>

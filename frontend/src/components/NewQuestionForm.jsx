@@ -36,18 +36,15 @@ export default function NewQuestionForm() {
       };
 
       const created = await problemsApi.create(payload);
-      // API could return the object directly or wrapped.
-      const createdObj = created.problem ?? created;
-      const newId = createdObj?.id;
 
-      if (newId) {
-        navigate(`/questions/${newId}`);
+      if (created?.id) {
+        navigate(`/questions/${created.id}`);
       } else {
         navigate("/dashboard");
       }
     } catch (e) {
       setError(
-        e?.response?.data?.message ||
+        e?.response?.data?.error ||
           e?.message ||
           "Failed to create the problem"
       );
@@ -68,8 +65,10 @@ export default function NewQuestionForm() {
 
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
+          <label htmlFor="title" className="block text-sm font-medium mb-1">Title</label>
           <input
+            id="title"
+            name="title"
             className="w-full border rounded px-3 py-2"
             placeholder="Brief, descriptive title"
             value={title}
@@ -79,8 +78,10 @@ export default function NewQuestionForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
+          <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
           <textarea
+            id="description"
+            name="description"
             className="w-full border rounded px-3 py-2 min-h-[160px]"
             placeholder="Explain your problem, what you tried, and what you expect"
             value={description}
@@ -91,8 +92,10 @@ export default function NewQuestionForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Type</label>
+            <label htmlFor="problemType" className="block text-sm font-medium mb-1">Type</label>
             <select
+              id="problemType"
+              name="problemType"
               className="w-full border rounded px-3 py-2"
               value={problemType}
               onChange={(e) => setProblemType(e.target.value)}
@@ -105,10 +108,12 @@ export default function NewQuestionForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="tagIds" className="block text-sm font-medium mb-1">
               Tag IDs (comma-separated, optional)
             </label>
             <input
+              id="tagIds"
+              name="tagIds"
               className="w-full border rounded px-3 py-2"
               placeholder="e.g. 1,2,3"
               value={tagIdsCsv}

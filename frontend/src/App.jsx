@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/App.jsx
+import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
 // layout & shared
@@ -11,45 +12,83 @@ import PingProbe from "./components/dev/PingProbe";
 // pages/components
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
-import  UserHome  from "./components/UserHome";
-import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails";
+import UserHome from "./components/UserHome";
+import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails"; // ✅ use only this
 import { AdminPanel } from "./components/AdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
-import { PasswordReset } from "./components/PasswordReset"; // ✅ added
+import { PasswordReset } from "./components/PasswordReset";
 
 // mock data (for demo mode)
 import { mockNotifications, mockQuestions, mockUsers } from "./data/mockData";
 
+// ✅ API
+import { authApi } from "./services/api";
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [notifications, setNotifications] = useState(mockNotifications);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   const navigate = useNavigate();
+
+  // ---- bootstrap user on refresh ----
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setLoadingUser(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const me = await authApi.me();
+        setCurrentUser(me.user ?? me);
+      } catch (err) {
+        console.error("Token invalid, logging out", err);
+        localStorage.removeItem("access_token");
+        setCurrentUser(null);
+      } finally {
+        setLoadingUser(false);
+      }
+    })();
+  }, []);
 
   // ---- auth handlers ----
   const handleLogin = (user) => {
     setCurrentUser(user);
-    navigate("/dashboard");
+
+    // role-based redirect
+    if (user.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    localStorage.removeItem("access_token");
     navigate("/");
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // ---- route guards ----
   const RequireAuth = ({ children }) => {
+    if (loadingUser) return <div className="p-8 text-center">Loading...</div>;
     if (!currentUser) return <Navigate to="/login" replace />;
     return children;
   };
 
   const RequireAdmin = ({ children }) => {
+    if (loadingUser) return <div className="p-8 text-center">Loading...</div>;
     if (!currentUser) return <Navigate to="/login" replace />;
-    if (currentUser.role !== "admin") return <Navigate to="/dashboard" replace />;
+    if (currentUser.role !== "admin") {
+      return <Navigate to="/dashboard" replace />;
+    }
     return children;
   };
 
@@ -96,7 +135,6 @@ export default function App() {
               />
             }
           />
-          {/* ✅ Forgot password / reset flow */}
           <Route
             path="/reset-password"
             element={
@@ -117,23 +155,7 @@ export default function App() {
             }
           />
 
-          {/* Alternative user home */}
-          <Route
-            path="/user"
-            element={
-              <RequireAuth>
-                <UserHome currentUser={currentUser} />
-              </RequireAuth>
-            }
-          />
-
-          {/* Question details */}
-          <Route
-            path="/questions/:id"
-            element={<EnhancedQuestionDetails currentUser={currentUser} />}
-          />
-
-          {/* New question form */}
+          {/* Ask a Question */}
           <Route
             path="/ask"
             element={
@@ -143,7 +165,17 @@ export default function App() {
             }
           />
 
-          {/* Enhanced user profile */}
+          {/* Single Question - ✅ only EnhancedQuestionDetails */}
+          <Route
+            path="/questions/:id"
+            element={
+              <RequireAuth>
+                <EnhancedQuestionDetails currentUser={currentUser} />
+              </RequireAuth>
+            }
+          />
+
+          {/* User profile */}
           <Route
             path="/profile/:id"
             element={
@@ -175,7 +207,7 @@ export default function App() {
             }
           />
 
-          {/* Admin Panel */}
+          {/* Admin-only */}
           <Route
             path="/admin"
             element={
@@ -194,12 +226,10 @@ export default function App() {
         </Routes>
       </main>
 
-      {/* Footer for public pages */}
       {!currentUser && <Footer />}
-
       <Toaster />
 
-      {/* Dev-only API ping badge */}
+      {/* Dev-only ping */}
       {import.meta.env.DEV && import.meta.env.VITE_API_BASE && (
         <div className="dev-ping-probe fixed left-3 bottom-3 z-[9999]">
           <PingProbe />
@@ -208,4 +238,3 @@ export default function App() {
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+// src/components/AdminPanel.jsx
 import React, { useEffect, useState } from "react";
 import {
   Users,
@@ -20,8 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { Input } from "./ui/input";
+import api from "../services/api"; // ✅ use Axios instance
 
 export function AdminPanel({ currentUser }) {
   const [activeTab, setActiveTab] = useState("overview");
@@ -51,14 +59,14 @@ export function AdminPanel({ currentUser }) {
         setError("");
 
         const [statsRes, reportsRes, auditRes] = await Promise.all([
-          fetch("/api/admin/stats").then((r) => r.json()),
-          fetch("/api/admin/reports").then((r) => r.json()),
-          fetch("/api/admin/audit").then((r) => r.json()),
+          api.get("/admin/stats").then((r) => r.data).catch(() => null),
+          api.get("/admin/reports").then((r) => r.data).catch(() => []),
+          api.get("/admin/audit").then((r) => r.data).catch(() => []),
         ]);
 
-        setStats(statsRes);
-        setReports(reportsRes);
-        setAuditLogs(auditRes);
+        setStats(statsRes || {});
+        setReports(Array.isArray(reportsRes) ? reportsRes : []);
+        setAuditLogs(Array.isArray(auditRes) ? auditRes : []);
       } catch (err) {
         console.error(err);
         setError("Failed to load admin data");
@@ -71,32 +79,34 @@ export function AdminPanel({ currentUser }) {
 
   async function handleReportAction(reportId, action) {
     try {
-      await fetch(`/api/admin/reports/${reportId}/${action}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      // Refresh reports
-      const refreshed = await fetch("/api/admin/reports").then((r) => r.json());
-      setReports(refreshed);
+      await api.post(`/admin/reports/${reportId}/${action}`);
+      const refreshed = await api
+        .get("/admin/reports")
+        .then((r) => r.data)
+        .catch(() => []);
+      setReports(Array.isArray(refreshed) ? refreshed : []);
     } catch (err) {
       console.error("Failed to update report", err);
     }
   }
 
-  const filteredReports = reports.filter((report) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      report.targetTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.reporterName.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredReports = Array.isArray(reports)
+    ? reports.filter((report) => {
+        const matchesSearch =
+          searchTerm === "" ||
+          report.targetTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          report.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          report.reporterName?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || report.status === statusFilter;
+        const matchesStatus =
+          statusFilter === "all" || report.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+        return matchesSearch && matchesStatus;
+      })
+    : [];
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
       year: "numeric",
@@ -108,7 +118,9 @@ export function AdminPanel({ currentUser }) {
   };
 
   if (loading) {
-    return <p className="text-center mt-20 text-gray-600">Loading admin data…</p>;
+    return (
+      <p className="text-center mt-20 text-gray-600">Loading admin data…</p>
+    );
   }
 
   if (error) {
@@ -122,7 +134,9 @@ export function AdminPanel({ currentUser }) {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="reports">Reports ({stats?.pendingReports || 0})</TabsTrigger>
+          <TabsTrigger value="reports">
+            Reports ({stats?.pendingReports || 0})
+          </TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
@@ -130,18 +144,42 @@ export function AdminPanel({ currentUser }) {
         {/* Overview */}
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <StatCard icon={<Users className="w-6 h-6 text-blue-600" />} color="bg-blue-100"
-              value={stats?.totalUsers} label="Total Users" />
-            <StatCard icon={<MessageSquare className="w-6 h-6 text-green-600" />} color="bg-green-100"
-              value={stats?.totalQuestions} label="Total Questions" />
-            <StatCard icon={<Flag className="w-6 h-6 text-orange-600" />} color="bg-orange-100"
-              value={stats?.pendingReports} label="Pending Reports" />
-            <StatCard icon={<Activity className="w-6 h-6 text-purple-600" />} color="bg-purple-100"
-              value={stats?.activeUsers} label="Active Users (30d)" />
-            <StatCard icon={<TrendingUp className="w-6 h-6 text-yellow-600" />} color="bg-yellow-100"
-              value={stats?.totalAnswers} label="Total Answers" />
-            <StatCard icon={<CheckCircle className="w-6 h-6 text-red-600" />} color="bg-red-100"
-              value={stats?.resolvedReports} label="Resolved Reports" />
+            <StatCard
+              icon={<Users className="w-6 h-6 text-blue-600" />}
+              color="bg-blue-100"
+              value={stats?.totalUsers}
+              label="Total Users"
+            />
+            <StatCard
+              icon={<MessageSquare className="w-6 h-6 text-green-600" />}
+              color="bg-green-100"
+              value={stats?.totalQuestions}
+              label="Total Questions"
+            />
+            <StatCard
+              icon={<Flag className="w-6 h-6 text-orange-600" />}
+              color="bg-orange-100"
+              value={stats?.pendingReports}
+              label="Pending Reports"
+            />
+            <StatCard
+              icon={<Activity className="w-6 h-6 text-purple-600" />}
+              color="bg-purple-100"
+              value={stats?.activeUsers}
+              label="Active Users (30d)"
+            />
+            <StatCard
+              icon={<TrendingUp className="w-6 h-6 text-yellow-600" />}
+              color="bg-yellow-100"
+              value={stats?.totalAnswers}
+              label="Total Answers"
+            />
+            <StatCard
+              icon={<CheckCircle className="w-6 h-6 text-red-600" />}
+              color="bg-red-100"
+              value={stats?.resolvedReports}
+              label="Resolved Reports"
+            />
           </div>
         </TabsContent>
 
@@ -189,11 +227,17 @@ export function AdminPanel({ currentUser }) {
                 <TableBody>
                   {filteredReports.map((report) => (
                     <TableRow key={report.id}>
-                      <TableCell><Badge>{report.type}</Badge></TableCell>
-                      <TableCell className="max-w-xs truncate">{report.targetTitle}</TableCell>
+                      <TableCell>
+                        <Badge>{report.type}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {report.targetTitle}
+                      </TableCell>
                       <TableCell>{report.reason}</TableCell>
                       <TableCell>{report.reporterName}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(report.timestamp)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(report.timestamp)}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -213,14 +257,18 @@ export function AdminPanel({ currentUser }) {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleReportAction(report.id, "resolve")}
+                              onClick={() =>
+                                handleReportAction(report.id, "resolve")
+                              }
                             >
                               <CheckCircle className="w-3 h-3" />
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleReportAction(report.id, "dismiss")}
+                              onClick={() =>
+                                handleReportAction(report.id, "dismiss")
+                              }
                             >
                               <EyeOff className="w-3 h-3" />
                             </Button>
@@ -238,7 +286,9 @@ export function AdminPanel({ currentUser }) {
         {/* Users */}
         <TabsContent value="users" className="mt-6">
           <Card>
-            <CardHeader><CardTitle>User Management</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+            </CardHeader>
             <CardContent>
               <p className="text-gray-600">User management coming soon…</p>
             </CardContent>
@@ -248,7 +298,9 @@ export function AdminPanel({ currentUser }) {
         {/* Audit Log */}
         <TabsContent value="audit" className="mt-6">
           <Card>
-            <CardHeader><CardTitle>Audit Log</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Audit Log</CardTitle>
+            </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
@@ -263,8 +315,12 @@ export function AdminPanel({ currentUser }) {
                 <TableBody>
                   {auditLogs.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell><Badge>{log.action}</Badge></TableCell>
-                      <TableCell className="truncate max-w-xs">{log.target}</TableCell>
+                      <TableCell>
+                        <Badge>{log.action}</Badge>
+                      </TableCell>
+                      <TableCell className="truncate max-w-xs">
+                        {log.target}
+                      </TableCell>
                       <TableCell>{log.adminName}</TableCell>
                       <TableCell>{formatDate(log.timestamp)}</TableCell>
                       <TableCell>{log.reason}</TableCell>

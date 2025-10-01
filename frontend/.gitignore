@@ -32,4 +32,4 @@ backend/.coverage
 backend/htmlcov/
 backend/instance/
 backend/.env
-backend/.env.*
+backend/.env.*.env

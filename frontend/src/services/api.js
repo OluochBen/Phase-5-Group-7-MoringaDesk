@@ -1,18 +1,43 @@
 import axios from "axios";
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  "https://phase-5-group-7-moringadesk.onrender.com";
+
+// ✅ Use local API by default, fallback to deployed if provided
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:5000";
 
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
 });
 
+// ✅ Attach token automatically if it exists
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token && token !== "undefined" && token !== "null") {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
+
+// ✅ Handle expired/invalid tokens (422 or 401)
+// Clears token and redirects to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if ([401, 422].includes(error?.response?.status)) {
+      localStorage.removeItem("access_token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ✅ Helper to store token cleanly
+function storeToken(token) {
+  if (token) {
+    localStorage.setItem("access_token", token);
+  }
+}
+
+// ---------------------- API ENDPOINTS ----------------------
 
 export const healthApi = {
   ping: () => api.get("/ping").then((r) => r.data),
@@ -24,13 +49,23 @@ export const faqApi = {
 };
 
 export const authApi = {
-  register: (name, email, password, role = "user") =>
-    api.post("/auth/register", { name, email, password, role }).then((r) => r.data),
+  register: (name, email, password, role = "student") =>
+    api.post("/auth/register", { name, email, password, role }).then((r) => {
+      if (r.data.access_token) storeToken(r.data.access_token);
+      return r.data;
+    }),
 
   login: (email, password) =>
-    api.post("/auth/login", { email, password }).then((r) => r.data),
+    api.post("/auth/login", { email, password }).then((r) => {
+      if (r.data.access_token) storeToken(r.data.access_token);
+      return r.data;
+    }),
 
-  me: () => api.get("/auth/me").then((r) => r.data),
+  me: () =>
+    api.get("/auth/me").then((r) => {
+      // ✅ Always return user object (consistent)
+      return r.data.user ?? r.data;
+    }),
 
   requestPasswordReset: (email) =>
     api.post("/auth/request-reset", { email }).then((r) => r.data),

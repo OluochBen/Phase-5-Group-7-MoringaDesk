@@ -9,7 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), default='student')
+    role = db.Column(db.String(20), default='student')  # ✅ default student
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -23,19 +23,15 @@ class User(db.Model):
     password_reset_tokens = db.relationship('PasswordResetToken', backref='user', lazy=True)
     
     def set_password(self, password):
-        """Hash and set password"""
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     def check_password(self, password):
-        """Check if provided password matches hash"""
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
     
     def is_admin(self):
-        """Check if user is admin"""
         return self.role == 'admin'
     
     def to_dict(self):
-        """Convert user to dictionary"""
         return {
             'id': self.id,
             'name': self.name,

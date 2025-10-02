@@ -80,6 +80,7 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
               <HelpCircle className="w-4 h-4" />
               <span>FAQ</span>
             </Button>
+            
 
             {user.role === "admin" && (
               <Button

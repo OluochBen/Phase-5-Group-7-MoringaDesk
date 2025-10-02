@@ -1,5 +1,6 @@
-import React from 'react';
-import { Button } from './ui/button';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
 
 export function PublicNavbar({ onLogin, onSignUp }) {
   return (
@@ -29,6 +30,13 @@ export function PublicNavbar({ onLogin, onSignUp }) {
             <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors">
               About
             </a>
+            {/* ✅ Contact Us as a route */}
+            <Link
+              to="/contact"
+              className="text-gray-600 hover:text-green-600 transition-colors"
+            >
+              Contact Us
+            </Link>
           </div>
 
           {/* Auth Buttons */}
@@ -47,7 +55,6 @@ export function PublicNavbar({ onLogin, onSignUp }) {
               Get Started
             </Button>
           </div>
-
         </div>
       </div>
     </nav>

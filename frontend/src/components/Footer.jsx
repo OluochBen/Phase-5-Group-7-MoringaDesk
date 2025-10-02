@@ -1,6 +1,7 @@
 import React from 'react';
 import { Github, Twitter, Linkedin, Mail, Heart } from 'lucide-react';
 import { Button } from './ui/button';
+import { Link } from 'react-router-dom';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -14,12 +15,12 @@ export function Footer() {
     ],
     support: [
       { name: 'Help Center', href: '#help' },
-      { name: 'Contact Us', href: '#contact' },
+      { name: 'Contact Us', href: '/contact', isRoute: true },
       { name: 'Bug Reports', href: '#bugs' },
       { name: 'Feature Requests', href: '#requests' }
     ],
     company: [
-      { name: 'About Us', href: '#about' },
+      { name: 'About Us', href: '/about', isRoute: true },
       { name: 'Blog', href: '#blog' },
       { name: 'Careers', href: '#careers' },
       { name: 'Press', href: '#press' }
@@ -38,6 +39,27 @@ export function Footer() {
     { name: 'LinkedIn', icon: <Linkedin className="w-5 h-5" />, href: 'https://linkedin.com' },
     { name: 'Email', icon: <Mail className="w-5 h-5" />, href: 'mailto:hello@moringadesk.com' }
   ];
+
+    const renderLink = (link) => {
+    if (link.isRoute) {
+      return (
+        <Link
+          to={link.href}
+          className="text-gray-400 hover:text-white transition-colors text-sm"
+        >
+          {link.name}
+        </Link>
+      );
+    }
+    return (
+      <a
+        href={link.href}
+        className="text-gray-400 hover:text-white transition-colors text-sm"
+      >
+        {link.name}
+      </a>
+    );
+  };
 
   return (
     <footer className="bg-gray-900 text-white">

@@ -8,12 +8,13 @@ import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
 import PingProbe from "./components/dev/PingProbe";
+import ContactPage from "./components/ui/ContactPage"; // ✅ contact page import
 
 // pages/components
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
 import UserHome from "./components/UserHome";
-import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails"; // ✅ use only this
+import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails";
 import { AdminPanel } from "./components/AdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
@@ -21,10 +22,10 @@ import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { PasswordReset } from "./components/PasswordReset";
 
-// mock data (for demo mode)
+// mock data
 import { mockNotifications, mockQuestions, mockUsers } from "./data/mockData";
 
-// ✅ API
+// API
 import { authApi } from "./services/api";
 
 export default function App() {
@@ -34,7 +35,7 @@ export default function App() {
 
   const navigate = useNavigate();
 
-  // ---- bootstrap user on refresh ----
+  // bootstrap user on refresh
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -56,11 +57,9 @@ export default function App() {
     })();
   }, []);
 
-  // ---- auth handlers ----
+  // auth handlers
   const handleLogin = (user) => {
     setCurrentUser(user);
-
-    // role-based redirect
     if (user.role === "admin") {
       navigate("/admin");
     } else {
@@ -76,7 +75,7 @@ export default function App() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // ---- route guards ----
+  // route guards
   const RequireAuth = ({ children }) => {
     if (loadingUser) return <div className="p-8 text-center">Loading...</div>;
     if (!currentUser) return <Navigate to="/login" replace />;
@@ -113,6 +112,9 @@ export default function App() {
       <main className="pt-16">
         <Routes>
           <Route path="/" element={<Homepage />} />
+
+          {/* Contact Page ✅ */}
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Auth */}
           <Route
@@ -165,7 +167,7 @@ export default function App() {
             }
           />
 
-          {/* Single Question - ✅ only EnhancedQuestionDetails */}
+          {/* Single Question */}
           <Route
             path="/questions/:id"
             element={
@@ -226,7 +228,9 @@ export default function App() {
         </Routes>
       </main>
 
-      {!currentUser && <Footer />}
+      {/* ✅ Footer always visible */}
+      <Footer />
+
       <Toaster />
 
       {/* Dev-only ping */}

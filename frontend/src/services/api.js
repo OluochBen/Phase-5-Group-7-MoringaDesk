@@ -23,7 +23,7 @@ api.interceptors.response.use(
   (error) => {
     if ([401, 422].includes(error?.response?.status)) {
       localStorage.removeItem("access_token");
-      window.location.href = "/login";
+      window.location.href = "/auth";
     }
     return Promise.reject(error);
   }
@@ -85,6 +85,13 @@ export const problemsApi = {
     api
       .post("/problems", { title, description, problem_type, tag_ids })
       .then((r) => r.data),
+
+  update: (id, { title, description, problem_type, tag_ids = [] }) =>
+    api
+      .put(`/problems/${id}`, { title, description, problem_type, tag_ids })
+      .then((r) => r.data),
+
+  delete: (id) => api.delete(`/problems/${id}`).then((r) => r.data),
 };
 
 export const solutionsApi = {
@@ -93,16 +100,25 @@ export const solutionsApi = {
       .get(`/problems/${problemId}/solutions`, { params: { page, per_page } })
       .then((r) => r.data),
 
+  get: (problemId, solutionId) =>
+    api.get(`/problems/${problemId}/solutions/${solutionId}`).then((r) => r.data),
+
   create: (problemId, { content }) =>
     api.post(`/problems/${problemId}/solutions`, { content }).then((r) => r.data),
+
+  update: (problemId, solutionId, { content }) =>
+    api.put(`/problems/${problemId}/solutions/${solutionId}`, { content }).then((r) => r.data),
+
+  delete: (problemId, solutionId) =>
+    api.delete(`/problems/${problemId}/solutions/${solutionId}`).then((r) => r.data),
 };
 
 export const votesApi = {
-  voteSolution: (solutionId, vote_type) =>
-    api.post(`/solutions/${solutionId}/vote`, { vote_type }).then((r) => r.data),
+  voteSolution: (problemId, solutionId, vote_type) =>
+    api.post(`/problems/${problemId}/solutions/${solutionId}/vote`, { vote_type }).then((r) => r.data),
 
-  removeVote: (solutionId) =>
-    api.delete(`/solutions/${solutionId}/vote`).then((r) => r.data),
+  removeVote: (problemId, solutionId) =>
+    api.delete(`/problems/${problemId}/solutions/${solutionId}/vote`).then((r) => r.data),
 
   getVotes: (solutionId) =>
     api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),

@@ -1,62 +1,45 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { notificationsApi } from "../services/api";
 import { Badge } from "./ui/badge";
 
 export function NotificationsPanel({ notifications: initialNotifications = [], onMarkAsRead }) {
-  const DEMO_MODE = !import.meta.env.VITE_API_BASE;
-  const initial = useMemo(() => (Array.isArray(initialNotifications) ? initialNotifications : []), [initialNotifications]);
-
-  const [items, setItems] = useState(initial);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState(initialNotifications);
   const [err, setErr] = useState("");
 
-  async function load() {
-    setLoading(true);
-    setErr("");
-    try {
-      if (DEMO_MODE) {
-        setItems(initial);
-      } else {
-        const data = await notificationsApi.list({ page: 1, per_page: 20, unread_only: false });
-        const list = data?.notifications ?? data?.items ?? (Array.isArray(data) ? data : []);
-        setItems(Array.isArray(list) ? list : []);
-      }
-    } catch (e) {
-      setErr("Failed to load notifications");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    setItems(initialNotifications);
+  }, [initialNotifications]);
 
   async function markOne(id) {
-    if (DEMO_MODE) {
-      setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await notificationsApi.markRead(id);
+      setItems((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
       onMarkAsRead && onMarkAsRead(id);
-      return;
+    } catch (e) {
+      console.error("Failed to mark notification as read:", e);
+      setErr("Failed to mark notification as read");
     }
-    await notificationsApi.markRead(id);
-    await load();
   }
 
   async function markAll() {
-    if (DEMO_MODE) {
-      setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-      return;
+    try {
+      await notificationsApi.markAllRead();
+      setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      // Call onMarkAsRead for all unread notifications
+      items.filter(n => !n.is_read).forEach(n => onMarkAsRead && onMarkAsRead(n.id));
+    } catch (e) {
+      console.error("Failed to mark all notifications as read:", e);
+      setErr("Failed to mark all notifications as read");
     }
-    await notificationsApi.markAllRead();
-    await load();
   }
 
-  if (loading) return <div className="p-6">Loading…</div>;
   if (err) return <div className="p-6 text-red-600">{err}</div>;
 
   const list = Array.isArray(items) ? items : [];
 
   const typeStyles = (type) => {
     switch (type) {
-      case "answer":
+      case "new_answer":
         return { bar: "border-l-green-500", pill: "bg-green-100 text-green-700" };
       case "vote":
         return { bar: "border-l-blue-500", pill: "bg-blue-100 text-blue-700" };
@@ -73,6 +56,17 @@ export function NotificationsPanel({ notifications: initialNotifications = [], o
     }
   };
 
+  const getNotificationMessage = (notification) => {
+    switch (notification.type) {
+      case "new_answer":
+        return "Someone posted a new solution to a question you're following";
+      case "vote":
+        return "Someone upvoted your solution";
+      default:
+        return notification.message || "You have a new notification";
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -86,29 +80,35 @@ export function NotificationsPanel({ notifications: initialNotifications = [], o
         {list.map((n) => {
           const s = typeStyles(n.type);
           return (
-            <div key={n.id} className={`border rounded p-4 ${s.bar} border-l-4 ${n.read ? "bg-white" : "bg-green-50/50"}`}>
+            <div key={n.id} className={`border rounded p-4 ${s.bar} border-l-4 ${n.is_read ? "bg-white" : "bg-green-50/50"}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {n.type && (
-                    <Badge variant="secondary" className={`${s.pill} capitalize`}>{n.type}</Badge>
+                    <Badge variant="secondary" className={`${s.pill} capitalize`}>
+                      {n.type === "new_answer" ? "New Answer" : n.type}
+                    </Badge>
                   )}
-                  <div className="font-medium">{n.title ?? n.type ?? "Notification"}</div>
+                  <div className="font-medium">
+                    {n.type === "new_answer" ? "New Solution" : 
+                     n.type === "vote" ? "Solution Upvoted" : 
+                     "Notification"}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {!n.read && <Badge className="bg-green-600 text-white">New</Badge>}
-                  {!n.read && (
+                  {!n.is_read && <Badge className="bg-green-600 text-white">New</Badge>}
+                  {!n.is_read && (
                     <button className="border px-2 py-1 rounded text-sm" onClick={() => markOne(n.id)}>
                       Mark read
                     </button>
                   )}
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">{n.message}</div>
-              {n.actionUrl && (
-                <a className="text-sm underline mt-1 inline-block" href={n.actionUrl}>
-                  View
-                </a>
-              )}
+              <div className="text-sm text-muted-foreground mt-1">
+                {getNotificationMessage(n)}
+              </div>
+              <div className="text-xs text-muted-foreground mt-2">
+                {new Date(n.created_at).toLocaleString()}
+              </div>
             </div>
           );
         })}

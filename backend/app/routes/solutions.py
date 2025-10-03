@@ -69,3 +69,26 @@ def get_solution_votes(solution_id):
     except Exception:
         current_app.logger.exception("GET /solutions/%s/votes failed", solution_id)
         return err("Internal server error", 500)
+
+
+@solutions_bp.route("/user/<int:user_id>", methods=["GET"])
+def get_user_solutions(user_id):
+    """Get solutions created by a specific user"""
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    
+    try:
+        result = SolutionService.get_user_solutions(user_id, page, per_page)
+        
+        meta = {
+            "current_page": result.get("current_page", page),
+            "pages": result.get("pages"),
+            "per_page": per_page,
+            "count": len(result.get("solutions", [])),
+            "total": result.get("total")
+        }
+        
+        return ok(result.get("solutions", []), meta)
+    except Exception:
+        current_app.logger.exception("GET /solutions/user/%s failed", user_id)
+        return err("Internal server error", 500)

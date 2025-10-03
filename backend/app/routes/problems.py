@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from ..services import QuestionService
+from ..services import QuestionService, SolutionService
 
 problems_bp = Blueprint("problems", __name__)
 
@@ -66,7 +66,8 @@ def create_problem():
         if status_code >= 400:
             return err(payload.get("error") if isinstance(payload, dict) else "Failed to create", status_code)
 
-        item = payload.get("data") if isinstance(payload, dict) else payload
+        # The service returns the question data directly, not wrapped in "data"
+        item = payload if isinstance(payload, dict) and "error" not in payload else payload
         return ok_item(item, status=status_code)
 
     except Exception:
@@ -84,4 +85,86 @@ def get_problem(question_id):
         return ok_item(result)
     except Exception:
         current_app.logger.exception("GET /problems/<id> failed")
+        return err("Internal server error", 500)
+
+
+# ---------- Solution Routes ----------
+@problems_bp.route("/<int:question_id>/solutions", methods=["GET"])
+def get_problem_solutions(question_id):
+    """Get solutions for a specific problem"""
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    
+    try:
+        result = SolutionService.get_solutions_by_question(question_id, page, per_page)
+        
+        items = result.get("solutions", [])
+        meta = {
+            "current_page": result.get("current_page", page),
+            "pages": result.get("pages"),
+            "per_page": per_page,
+            "count": len(items),
+            "total": result.get("total"),
+            "question": result.get("question")
+        }
+        
+        return ok_items(items, meta)
+    except Exception:
+        current_app.logger.exception("GET /problems/<id>/solutions failed")
+        return err("Internal server error", 500)
+
+
+@problems_bp.route("/<int:question_id>/solutions", methods=["POST"])
+@jwt_required()
+def create_problem_solution(question_id):
+    """Create a solution for a problem"""
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+    
+    try:
+        result, status_code = SolutionService.create_solution(question_id, data, user_id)
+        
+        if status_code >= 400:
+            return err(result.get("error") if isinstance(result, dict) else "Failed to create solution", status_code)
+        
+        return ok_item(result, status=status_code)
+    except Exception:
+        current_app.logger.exception("POST /problems/<id>/solutions failed")
+        return err("Internal server error", 500)
+
+
+@problems_bp.route("/<int:question_id>/solutions/<int:solution_id>", methods=["PUT"])
+@jwt_required()
+def update_problem_solution(question_id, solution_id):
+    """Update a solution"""
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+    
+    try:
+        result, status_code = SolutionService.update_solution(solution_id, data, user_id)
+        
+        if status_code >= 400:
+            return err(result.get("error") if isinstance(result, dict) else "Failed to update solution", status_code)
+        
+        return ok_item(result, status=status_code)
+    except Exception:
+        current_app.logger.exception("PUT /problems/<id>/solutions/<id> failed")
+        return err("Internal server error", 500)
+
+
+@problems_bp.route("/<int:question_id>/solutions/<int:solution_id>", methods=["DELETE"])
+@jwt_required()
+def delete_problem_solution(question_id, solution_id):
+    """Delete a solution"""
+    user_id = get_jwt_identity()
+    
+    try:
+        result, status_code = SolutionService.delete_solution(solution_id, user_id)
+        
+        if status_code >= 400:
+            return err(result.get("error") if isinstance(result, dict) else "Failed to delete solution", status_code)
+        
+        return jsonify(result), status_code
+    except Exception:
+        current_app.logger.exception("DELETE /problems/<id>/solutions/<id> failed")
         return err("Internal server error", 500)

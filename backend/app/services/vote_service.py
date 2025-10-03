@@ -5,7 +5,7 @@ from marshmallow import ValidationError
 
 class VoteService:
     @staticmethod
-    def vote_solution(solution_id, data, user_id):
+    def vote_solution(self, solution_id, data, user_id):
         """Vote on a solution"""
         # Check if solution exists
         solution = Solution.query.get(solution_id)
@@ -25,7 +25,13 @@ class VoteService:
         
         if existing_vote:
             # Update existing vote
+            old_vote_type = existing_vote.vote_type
             existing_vote.vote_type = validated_data['vote_type']
+            
+            # If vote changed to upvote, create notifications
+            if validated_data['vote_type'] == 'up' and old_vote_type != 'up':
+                self._create_upvote_notifications(solution, user_id, existing_vote.id)
+            
             db.session.commit()
         else:
             # Create new vote
@@ -37,14 +43,9 @@ class VoteService:
             db.session.add(vote)
             db.session.flush()  # Get the vote ID
             
-            # Notify solution author about vote (if not voting on own solution)
-            if solution.user_id != user_id:
-                notification = Notification(
-                    user_id=solution.user_id,
-                    type='vote',
-                    reference_id=vote.id
-                )
-                db.session.add(notification)
+            # If it's an upvote, create notifications
+            if validated_data['vote_type'] == 'up':
+                self._create_upvote_notifications(solution, user_id, vote.id)
             
             db.session.commit()
         
@@ -70,3 +71,47 @@ class VoteService:
         """Get all votes for a solution"""
         votes = Vote.query.filter_by(solution_id=solution_id).all()
         return [vote.to_dict() for vote in votes]
+    
+    @staticmethod
+    def _create_upvote_notifications(solution, voter_user_id, vote_id):
+        """Create notifications for upvote - notify both question creator and solution creator"""
+        from ..models import Question
+        
+        # Get the question to find its creator
+        question = Question.query.get(solution.question_id)
+        if not question:
+            return
+        
+        # Notify solution author about upvote (if not voting on own solution)
+        if solution.user_id != voter_user_id:
+            notification = Notification(
+                user_id=solution.user_id,
+                type='vote',
+                reference_id=vote_id
+            )
+            db.session.add(notification)
+        
+        # Notify question author about upvote (if not the same as solution author and not the voter)
+        if (question.user_id != solution.user_id and 
+            question.user_id != voter_user_id):
+            notification = Notification(
+                user_id=question.user_id,
+                type='vote',
+                reference_id=vote_id
+            )
+            db.session.add(notification)
+        
+        # Send WebSocket notifications
+        from .websocket_service import WebSocketService
+        from .notification_service import NotificationService
+        
+        # Notify solution author via WebSocket
+        if solution.user_id != voter_user_id:
+            unread_count = NotificationService.get_unread_count(solution.user_id)
+            WebSocketService.send_notification_count_update(solution.user_id, unread_count['unread_count'])
+        
+        # Notify question author via WebSocket
+        if (question.user_id != solution.user_id and 
+            question.user_id != voter_user_id):
+            unread_count = NotificationService.get_unread_count(question.user_id)
+            WebSocketService.send_notification_count_update(question.user_id, unread_count['unread_count'])

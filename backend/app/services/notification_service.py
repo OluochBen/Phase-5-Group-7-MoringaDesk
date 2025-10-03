@@ -33,6 +33,11 @@ class NotificationService:
         notification.is_read = True
         db.session.commit()
         
+        # Send WebSocket update
+        from .websocket_service import WebSocketService
+        unread_count = NotificationService.get_unread_count(user_id)
+        WebSocketService.send_notification_count_update(user_id, unread_count['unread_count'])
+        
         return {'message': 'Notification marked as read'}, 200
     
     @staticmethod
@@ -41,6 +46,11 @@ class NotificationService:
         Notification.query.filter_by(user_id=user_id, is_read=False)\
             .update({'is_read': True})
         db.session.commit()
+        
+        # Send WebSocket update
+        from .websocket_service import WebSocketService
+        unread_count = NotificationService.get_unread_count(user_id)
+        WebSocketService.send_notification_count_update(user_id, unread_count['unread_count'])
         
         return {'message': 'All notifications marked as read'}, 200
     

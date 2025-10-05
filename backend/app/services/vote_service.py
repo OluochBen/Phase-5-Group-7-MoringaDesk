@@ -1,7 +1,10 @@
+from marshmallow import ValidationError
+
 from .. import db
 from ..models import Vote, Solution, Notification
 from ..schemas import VoteCreateSchema
-from marshmallow import ValidationError
+from .solution_service import SolutionService
+
 
 class VoteService:
     @staticmethod
@@ -11,7 +14,12 @@ class VoteService:
         solution = Solution.query.get(solution_id)
         if not solution:
             return {'error': 'Solution not found'}, 404
-        
+
+        try:
+            voter_id = int(user_id)
+        except (TypeError, ValueError):
+            voter_id = user_id
+
         schema = VoteCreateSchema()
         try:
             validated_data = schema.load(data)
@@ -20,25 +28,32 @@ class VoteService:
         
         # Check if user already voted
         existing_vote = Vote.query.filter_by(
-            user_id=user_id, solution_id=solution_id
+            user_id=voter_id, solution_id=solution_id
         ).first()
         
+        message = "Vote recorded successfully"
+        commit_needed = False
+
         if existing_vote:
-            # Update existing vote
-            existing_vote.vote_type = validated_data['vote_type']
-            db.session.commit()
+            new_type = validated_data['vote_type']
+            if existing_vote.vote_type == new_type:
+                message = "Vote unchanged"
+            else:
+                existing_vote.vote_type = new_type
+                message = "Vote updated successfully"
+                commit_needed = True
         else:
             # Create new vote
             vote = Vote(
                 solution_id=solution_id,
-                user_id=user_id,
+                user_id=voter_id,
                 vote_type=validated_data['vote_type']
             )
             db.session.add(vote)
             db.session.flush()  # Get the vote ID
             
             # Notify solution author about vote (if not voting on own solution)
-            if solution.user_id != user_id:
+            if solution.user_id != voter_id:
                 notification = Notification(
                     user_id=solution.user_id,
                     type='vote',
@@ -46,15 +61,24 @@ class VoteService:
                 )
                 db.session.add(notification)
             
+            commit_needed = True
+
+        if commit_needed:
             db.session.commit()
-        
-        return {'message': 'Vote recorded successfully'}, 200
+
+        serialized = SolutionService.get_solution_by_id(solution_id, current_user_id=voter_id)
+        return {"item": serialized, "message": message}, 200
     
     @staticmethod
     def remove_vote(solution_id, user_id):
         """Remove vote from solution"""
+        try:
+            voter_id = int(user_id)
+        except (TypeError, ValueError):
+            voter_id = user_id
+
         vote = Vote.query.filter_by(
-            user_id=user_id, solution_id=solution_id
+            user_id=voter_id, solution_id=solution_id
         ).first()
         
         if not vote:
@@ -62,8 +86,9 @@ class VoteService:
         
         db.session.delete(vote)
         db.session.commit()
-        
-        return {'message': 'Vote removed successfully'}, 200
+
+        serialized = SolutionService.get_solution_by_id(solution_id, current_user_id=voter_id)
+        return {"item": serialized, "message": 'Vote removed successfully'}, 200
     
     @staticmethod
     def get_votes_by_solution(solution_id):

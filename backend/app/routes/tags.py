@@ -32,12 +32,21 @@ def list_tags():
         like = f"%{q.lower()}%"
         query = query.filter(func.lower(Tag.name).like(like))
 
-    pagination = query.order_by(Tag.name.asc()).paginate(page=page, per_page=per_page, error_out=False)
+    query = query.order_by(Tag.name.asc())
+    pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
     items = [t.to_dict() for t in pagination.items]
+    meta = {
+        'current_page': pagination.page,
+        'pages': pagination.pages,
+        'per_page': pagination.per_page,
+        'total': pagination.total,
+    }
     return jsonify({
         'items': items,
-        'page': page,
-        'per_page': per_page,
+        'tags': items,
+        'meta': meta,
+        'page': pagination.page,
+        'per_page': pagination.per_page,
         'total': pagination.total,
     })
 

@@ -195,3 +195,84 @@ def test_link_related(client):
     if isinstance(one, dict):
         rq = one.get("related_questions", [])
         assert isinstance(rq, list)
+        assert any(item.get("id") == b["id"] for item in rq), rq
+
+
+def _extract_item(response_json):
+    if not isinstance(response_json, dict):
+        return response_json
+    if "data" in response_json and isinstance(response_json["data"], dict):
+        nested = response_json["data"]
+        return nested.get("item") or nested
+    return response_json.get("item") or response_json
+
+
+def test_vote_solution_and_notifications(client):
+    author_headers = _auth_register_and_login(client, email="author_vote@example.com")
+    problem = _create_problem(
+        client,
+        author_headers,
+        title="Voting",
+        description="Vote on my answer",
+        problem_type="technical",
+    )
+
+    # Author posts a solution
+    r_solution = client.post(
+        f"/problems/{problem['id']}/solutions",
+        headers=author_headers,
+        json={"content": "Detailed solution"},
+    )
+    assert r_solution.status_code in (200, 201), r_solution.data
+    solution_payload = _extract_item(r_solution.get_json())
+    solution_id = solution_payload.get("id")
+    assert solution_id, f"Unexpected solution payload: {solution_payload}"
+
+    voter_headers = _auth_register_and_login(client, email="voter@example.com")
+
+    # Upvote the solution
+    r_upvote = client.post(
+        f"/solutions/{solution_id}/vote",
+        headers=voter_headers,
+        json={"vote_type": "up"},
+    )
+    assert r_upvote.status_code == 200, r_upvote.data
+    upvote_payload = _extract_item(r_upvote.get_json())
+    assert upvote_payload.get("id") == solution_id
+    assert upvote_payload.get("votes", 0) >= 1
+    assert upvote_payload.get("my_vote", upvote_payload.get("user_vote")) == 1
+
+    # Author should receive a vote notification
+    r_notifications = client.get("/notifications", headers=author_headers)
+    assert r_notifications.status_code == 200, r_notifications.data
+    notifications_body = r_notifications.get_json()
+    notifications_list = notifications_body.get("notifications") or notifications_body.get("items") or []
+    assert isinstance(notifications_list, list)
+    assert any(n.get("type") == "vote" for n in notifications_list), notifications_list
+
+    # Removing the vote should zero out the user's vote flag
+    r_remove = client.delete(f"/solutions/{solution_id}/vote", headers=voter_headers)
+    assert r_remove.status_code == 200, r_remove.data
+    remove_payload = _extract_item(r_remove.get_json())
+    assert remove_payload.get("my_vote", remove_payload.get("user_vote", 0)) == 0
+
+
+def test_tags_list_structure(client):
+    # Ensure at least one tag exists
+    r_create = client.post("/tags", json={"name": "flask"})
+    assert r_create.status_code in (200, 201), r_create.data
+    tag_body = r_create.get_json()
+    assert isinstance(tag_body.get("tag"), dict), tag_body
+
+    r_list = client.get("/tags")
+    assert r_list.status_code == 200, r_list.data
+    tags_body = r_list.get_json()
+    items = tags_body.get("items")
+    tags_alias = tags_body.get("tags")
+    meta = tags_body.get("meta")
+
+    assert isinstance(items, list)
+    assert isinstance(tags_alias, list)
+    assert tags_alias == items
+    assert isinstance(meta, dict)
+    assert meta.get("total") == tags_body.get("total")

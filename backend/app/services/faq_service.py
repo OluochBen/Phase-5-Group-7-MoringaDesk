@@ -27,8 +27,8 @@ class FAQService:
     @staticmethod
     def get_faqs(page=1, per_page=10):
         """Get paginated list of FAQs"""
-        faqs = FAQ.query.order_by(FAQ.created_at.desc())\
-            .paginate(page=page, per_page=per_page, error_out=False)
+        query = FAQ.query.order_by(FAQ.created_at.desc())
+        faqs = db.paginate(query, page=page, per_page=per_page, error_out=False)
         
         return {
             'faqs': [f.to_dict() for f in faqs.items],

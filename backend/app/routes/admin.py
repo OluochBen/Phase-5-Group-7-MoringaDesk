@@ -33,7 +33,8 @@ def get_users():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
 
-    users = User.query.paginate(page=page, per_page=per_page, error_out=False)
+    users_query = User.query
+    users = db.paginate(users_query, page=page, per_page=per_page, error_out=False)
     return jsonify({
         "users": [u.to_dict() for u in users.items],
         "total": users.total,
@@ -81,7 +82,8 @@ def get_all_questions():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
 
-    questions = Question.query.paginate(page=page, per_page=per_page, error_out=False)
+    questions_query = Question.query
+    questions = db.paginate(questions_query, page=page, per_page=per_page, error_out=False)
     return jsonify({
         "questions": [q.to_dict() for q in questions.items],
         "total": questions.total,
@@ -128,8 +130,7 @@ def get_stats():
         "totalAnswers": Solution.query.count(),
         "pendingReports": Report.query.filter_by(status="pending").count(),
         "resolvedReports": Report.query.filter_by(status="resolved").count(),
-        # Replace with actual logic if you track active users
-        "activeUsers": 0
+        "activeUsers": User.query.filter(User.role != "admin").count(),
     }), 200
 
 
@@ -139,7 +140,33 @@ def get_stats():
 @admin_required
 def get_reports():
     reports = Report.query.order_by(Report.created_at.desc()).all()
-    return jsonify([r.to_dict() for r in reports]), 200
+    items = []
+    for report in reports:
+        data = report.to_dict()
+        reporter = getattr(report, 'reporter', None)
+        if reporter:
+            data['reporterName'] = reporter.name
+            data['reporterEmail'] = reporter.email
+        data['reporterId'] = report.user_id
+        data['type'] = report.target_type
+        data['priority'] = 'high' if report.reason and 'spam' in report.reason.lower() else 'medium'
+        data['description'] = report.reason
+        data['timestamp'] = data.get('created_at')
+
+        target_title = None
+        if report.target_type == 'question':
+            question = Question.query.get(report.target_id)
+            if question:
+                target_title = question.title
+        elif report.target_type in {'solution', 'answer'}:
+            solution = Solution.query.get(report.target_id)
+            if solution:
+                excerpt = solution.content.strip().split("\n")[0]
+                target_title = excerpt[:120] + ('…' if len(excerpt) > 120 else '')
+        data['targetTitle'] = target_title
+        items.append(data)
+
+    return jsonify(items), 200
 
 
 @admin_bp.route("/reports/<int:report_id>/resolve", methods=["POST"])
@@ -151,12 +178,15 @@ def resolve_report(report_id):
         return jsonify({"error": "Report not found"}), 404
 
     report.status = "resolved"
+    admin_id = get_jwt_identity()
+    admin_user = User.query.get(admin_id)
     db.session.commit()
 
     log = AuditLog(
         action="resolve_report",
         target=f"Report {report.id}",
-        admin_id=get_jwt_identity(),
+        admin_id=admin_id,
+        admin_name=admin_user.name if admin_user else "Admin",
         reason="Report marked resolved"
     )
     db.session.add(log)
@@ -174,12 +204,15 @@ def dismiss_report(report_id):
         return jsonify({"error": "Report not found"}), 404
 
     report.status = "dismissed"
+    admin_id = get_jwt_identity()
+    admin_user = User.query.get(admin_id)
     db.session.commit()
 
     log = AuditLog(
         action="dismiss_report",
         target=f"Report {report.id}",
-        admin_id=get_jwt_identity(),
+        admin_id=admin_id,
+        admin_name=admin_user.name if admin_user else "Admin",
         reason="Report dismissed"
     )
     db.session.add(log)

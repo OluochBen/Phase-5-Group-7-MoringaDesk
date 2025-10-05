@@ -50,11 +50,19 @@ def create_app():
     from .routes.problems import problems_bp
     from .routes.faqs import faqs_bp
     from .routes.admin import admin_bp
+    from .routes.solutions import solutions_bp
+    from .routes.notifications import notifications_bp
+    from .routes.tags import tags_bp
+    from .routes.profile import profile_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(problems_bp, url_prefix="/problems")
     app.register_blueprint(faqs_bp, url_prefix="/faqs")
     app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(solutions_bp, url_prefix="/solutions")
+    app.register_blueprint(notifications_bp, url_prefix="/notifications")
+    app.register_blueprint(tags_bp, url_prefix="/tags")
+    app.register_blueprint(profile_bp, url_prefix="/profile")
 
     # --- Health check ---
     @app.route("/ping", methods=["GET", "OPTIONS"])

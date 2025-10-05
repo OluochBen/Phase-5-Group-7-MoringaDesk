@@ -21,6 +21,7 @@ class User(db.Model):
     notifications = db.relationship('Notification', backref='user', lazy=True)
     faqs = db.relationship('FAQ', backref='creator', lazy=True)
     password_reset_tokens = db.relationship('PasswordResetToken', backref='user', lazy=True)
+    reports = db.relationship('Report', backref='reporter', lazy=True)
     
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')

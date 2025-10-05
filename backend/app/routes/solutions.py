@@ -16,10 +16,12 @@ def err(message, status=400):
 
 
 @solutions_bp.route("/<int:solution_id>", methods=["GET"])
+@jwt_required(optional=True)
 def get_solution(solution_id):
     """Get a single solution"""
     try:
-        result = SolutionService.get_solution_by_id(solution_id)
+        current_user_id = get_jwt_identity()
+        result = SolutionService.get_solution_by_id(solution_id, current_user_id=current_user_id)
         if not result:
             return err("Solution not found", 404)
         return ok(result)

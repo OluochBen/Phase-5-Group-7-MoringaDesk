@@ -3,12 +3,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from flask_socketio import SocketIO
 import os
 from dotenv import load_dotenv
 
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
+socketio = SocketIO()
+
 
 def create_app():
     app = Flask(__name__)
@@ -31,18 +34,30 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    socketio.init_app(
+        app,
+        cors_allowed_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://moringadesk-gcvu.onrender.com",
+        ],
+    )
 
     # --- CORS ---
     CORS(
         app,
-        resources={r"/*": {"origins": [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "https://moringadesk-gcvu.onrender.com"  # ✅ deployed frontend
-        ]}},
+        resources={
+            r"/*": {
+                "origins": [
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173",
+                    "https://moringadesk-gcvu.onrender.com",
+                ]
+            }
+        },
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     )
 
     # --- Blueprints ---
@@ -63,6 +78,12 @@ def create_app():
     app.register_blueprint(notifications_bp, url_prefix="/notifications")
     app.register_blueprint(tags_bp, url_prefix="/tags")
     app.register_blueprint(profile_bp, url_prefix="/profile")
+
+    # --- WebSocket events ---
+    try:
+        from . import events  # noqa: F401
+    except ImportError:
+        pass
 
     # --- Health check ---
     @app.route("/ping", methods=["GET", "OPTIONS"])

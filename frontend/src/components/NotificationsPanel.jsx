@@ -19,12 +19,12 @@ export function NotificationsPanel({
       const data = onRefresh
         ? await onRefresh()
         : await notificationsApi.list({ page: 1, per_page: 20, unread_only: false });
-      const list = Array.isArray(data)
-        ? data
-        : data?.notifications ?? data?.items ?? [];
-      setItems(Array.isArray(list) ? list : []);
-      return list;
-    } catch {
+      const list = Array.isArray(data) ? data : data?.notifications ?? data?.items ?? [];
+      const normalized = Array.isArray(list) ? list : [];
+      setItems(normalized);
+      return normalized;
+    } catch (e) {
+      console.error("Failed to load notifications", e);
       setErr("Failed to load notifications");
       return [];
     } finally {
@@ -45,9 +45,10 @@ export function NotificationsPanel({
   const markOne = async (id) => {
     try {
       await notificationsApi.markRead(id);
-      await load();
+      setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n)));
       onMarkAsRead?.(id);
-    } catch {
+    } catch (e) {
+      console.error("Failed to mark notification", e);
       setErr("Failed to mark notification");
     }
   };
@@ -55,9 +56,10 @@ export function NotificationsPanel({
   const markAll = async () => {
     try {
       await notificationsApi.markAllRead();
-      await load();
+      setItems((prev) => prev.map((n) => ({ ...n, read: true, is_read: true })));
       onMarkAllRead?.();
-    } catch {
+    } catch (e) {
+      console.error("Failed to mark notifications", e);
       setErr("Failed to mark notifications");
     }
   };

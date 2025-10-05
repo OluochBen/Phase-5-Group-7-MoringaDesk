@@ -33,6 +33,6 @@
 6. **Run the application**:
    ```bash
    cd backend (if not in the backend folder)
-   python app.py
+   python wsgi.py
 
 Find a ttached postman collection and environment for api testing and backend intergration to the frontend

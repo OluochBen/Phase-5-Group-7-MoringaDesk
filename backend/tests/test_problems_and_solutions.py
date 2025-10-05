@@ -11,6 +11,8 @@ def _unwrap(payload):
     - If backend returns {"data": {...|[...]}} -> return that
     - If backend returns {"questions": [...]}, return that
     - If backend returns {"solutions": [...]}, return that
+    - If backend returns {"items": [...]}, return that
+    - If backend returns {"item": {...}}, return that
     - Else return the payload as-is
     """
     if payload is None:
@@ -22,6 +24,10 @@ def _unwrap(payload):
             return payload["questions"]
         if "solutions" in payload:
             return payload["solutions"]
+        if "items" in payload:
+            return payload["items"]
+        if "item" in payload:
+            return payload["item"]
     return payload
 
 

@@ -7,6 +7,7 @@ from flask_socketio import SocketIO
 import os
 from dotenv import load_dotenv
 
+
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()

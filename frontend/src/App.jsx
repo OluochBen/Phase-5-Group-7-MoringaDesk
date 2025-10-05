@@ -83,7 +83,7 @@ export default function App() {
     loadNotifications();
   }, [currentUser, loadNotifications]);
 
-  // optional background refresh every 30s
+  // optional periodic refresh
   useEffect(() => {
     if (!currentUser) return undefined;
     const interval = setInterval(loadNotifications, 30000);

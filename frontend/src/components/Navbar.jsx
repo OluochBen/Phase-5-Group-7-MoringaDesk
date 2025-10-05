@@ -16,6 +16,7 @@ import {
 
 export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifications }) {
   const [searchQuery, setSearchQuery] = useState("");
+  console.log("Unread count",unreadNotifications);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -111,14 +112,26 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
               className="relative"
             >
               <Bell className="w-4 h-4" />
-              {unreadNotifications > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                </Badge>
-              )}
+              {/* Debug: Test with simple div first */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-8px',
+                  width: '20px',
+                  height: '20px',
+                  backgroundColor: 'red',
+                  color: 'white',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold'
+                }}
+              >
+                {unreadNotifications || 0}
+              </div>
             </Button>
 
             {/* User Menu */}

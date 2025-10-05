@@ -14,11 +14,13 @@ def ok_item(item, status=200):
         payload = {"item": item}
     return jsonify(payload), status
 
+
 def ok_items(items, meta=None, status=200):
     payload = {"items": items, "meta": meta or {}}
     if isinstance(items, list):
         payload["questions"] = items
     return jsonify(payload), status
+
 
 def err(message, status=400):
     return jsonify({"error": message}), status

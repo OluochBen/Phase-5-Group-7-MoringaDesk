@@ -69,6 +69,7 @@ export function NotificationsPanel({
 
   const typeStyles = (type) => {
     switch (type) {
+      case "new_answer":
       case "answer":
         return { bar: "border-l-green-500", pill: "bg-green-100 text-green-700" };
       case "vote":
@@ -83,6 +84,18 @@ export function NotificationsPanel({
         return { bar: "border-l-slate-400", pill: "bg-slate-100 text-slate-700" };
       default:
         return { bar: "border-l-muted", pill: "bg-muted text-foreground" };
+    }
+  };
+
+  const getNotificationMessage = (notification) => {
+    switch (notification.type) {
+      case "new_answer":
+      case "answer":
+        return notification.message || "Someone posted a new solution to a question you're following";
+      case "vote":
+        return notification.message || "Someone upvoted your solution";
+      default:
+        return notification.message || "You have a new notification";
     }
   };
 
@@ -112,10 +125,16 @@ export function NotificationsPanel({
                 <div className="flex items-center gap-2">
                   {n.type && (
                     <Badge variant="secondary" className={`${s.pill} capitalize`}>
-                      {n.type}
+                      {n.type === "new_answer" ? "New Answer" : n.type}
                     </Badge>
                   )}
-                  <div className="font-medium">{n.title ?? n.type ?? "Notification"}</div>
+                  <div className="font-medium">
+                    {n.type === "new_answer" || n.type === "answer"
+                      ? "New Solution"
+                      : n.type === "vote"
+                      ? "Solution Upvoted"
+                      : n.title || "Notification"}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {!isRead && <Badge className="bg-green-600 text-white">New</Badge>}
@@ -129,7 +148,7 @@ export function NotificationsPanel({
                   )}
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">{n.message}</div>
+              <div className="text-sm text-muted-foreground mt-1">{getNotificationMessage(n)}</div>
               {n.actionUrl && (
                 <a className="text-sm underline mt-1 inline-block" href={n.actionUrl}>
                   View

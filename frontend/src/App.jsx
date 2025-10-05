@@ -69,6 +69,7 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setNotifications([]);
     localStorage.removeItem("access_token");
     navigate("/");
   };

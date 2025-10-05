@@ -33,6 +33,25 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const loadNotifications = useCallback(async () => {
+    if (!currentUser) {
+      setNotifications([]);
+      return [];
+    }
+
+    try {
+      const data = await notificationsApi.list({ page: 1, per_page: 50, unread_only: false });
+      const list = data?.notifications ?? data?.items ?? (Array.isArray(data) ? data : []);
+      const normalized = Array.isArray(list) ? list : [];
+      setNotifications(normalized);
+      return normalized;
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+      setNotifications([]);
+      return [];
+    }
+  }, [currentUser]);
+
   // ---- bootstrap user on refresh ----
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -55,16 +74,26 @@ export default function App() {
     })();
   }, []);
 
+  // ---- sync notifications with current user ----
+  useEffect(() => {
+    if (!currentUser) {
+      setNotifications([]);
+      return;
+    }
+    loadNotifications();
+  }, [currentUser, loadNotifications]);
+
+  // optional background refresh every 30s
+  useEffect(() => {
+    if (!currentUser) return undefined;
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser, loadNotifications]);
+
   // ---- auth handlers ----
   const handleLogin = (user) => {
     setCurrentUser(user);
-
-    // role-based redirect
-    if (user.role === "admin") {
-      navigate("/admin");
-    } else {
-      navigate("/dashboard");
-    }
+    navigate(user.role === "admin" ? "/admin" : "/dashboard");
   };
 
   const handleLogout = () => {
@@ -74,6 +103,7 @@ export default function App() {
     navigate("/");
   };
 
+  // redirect authenticated users away from landing page
   useEffect(() => {
     if (loadingUser) return;
     if (currentUser && location.pathname === "/") {
@@ -83,37 +113,9 @@ export default function App() {
 
   const unreadCount = notifications.filter((n) => !n.read && !n.is_read).length;
 
-  const loadNotifications = useCallback(async () => {
-    if (!currentUser) {
-      setNotifications([]);
-      return [];
-    }
-
-    try {
-      const data = await notificationsApi.list({ page: 1, per_page: 20, unread_only: false });
-      const list = data?.notifications ?? data?.items ?? (Array.isArray(data) ? data : []);
-      const normalized = Array.isArray(list) ? list : [];
-      setNotifications(normalized);
-      return normalized;
-    } catch (err) {
-      console.error("Failed to load notifications", err);
-      return [];
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      setNotifications([]);
-      return;
-    }
-    loadNotifications();
-  }, [currentUser, loadNotifications]);
-
   const handleLocalMarkRead = useCallback((id) => {
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, read: true, is_read: true } : n
-      )
+      prev.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n))
     );
   }, []);
 
@@ -158,10 +160,7 @@ export default function App() {
           unreadNotifications={unreadCount}
         />
       ) : (
-        <PublicNavbar
-          onLogin={() => navigate("/login")}
-          onSignUp={() => navigate("/register")}
-        />
+        <PublicNavbar onLogin={() => navigate("/login")} onSignUp={() => navigate("/register")} />
       )}
 
       {/* Routes */}
@@ -172,32 +171,15 @@ export default function App() {
           {/* Auth */}
           <Route
             path="/login"
-            element={
-              <AuthPage
-                defaultTab="login"
-                onLogin={handleLogin}
-                onRegister={handleLogin}
-              />
-            }
+            element={<AuthPage defaultTab="login" onLogin={handleLogin} onRegister={handleLogin} />}
           />
           <Route
             path="/register"
-            element={
-              <AuthPage
-                defaultTab="signup"
-                onLogin={handleLogin}
-                onRegister={handleLogin}
-              />
-            }
+            element={<AuthPage defaultTab="signup" onLogin={handleLogin} onRegister={handleLogin} />}
           />
           <Route
             path="/reset-password"
-            element={
-              <PasswordReset
-                onSuccess={() => navigate("/login")}
-                onClose={() => navigate("/login")}
-              />
-            }
+            element={<PasswordReset onSuccess={() => navigate("/login")} onClose={() => navigate("/login")} />}
           />
 
           {/* Dashboard */}
@@ -229,7 +211,7 @@ export default function App() {
             }
           />
 
-          {/* Single Question - ✅ only EnhancedQuestionDetails */}
+          {/* Single Question */}
           <Route
             path="/questions/:id"
             element={

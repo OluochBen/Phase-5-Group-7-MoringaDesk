@@ -16,7 +16,7 @@ export function FAQScreen() {
         // your backend returns { faqs: [...] } (from what we saw in the browser)
         if (alive) setFaqs(data.faqs ?? []);
       })
-      .catch((e) => alive && setErr("Failed to load FAQs"))
+      .catch(() => alive && setErr("Failed to load FAQs"))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [page]);

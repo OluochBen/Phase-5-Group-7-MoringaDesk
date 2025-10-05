@@ -38,7 +38,7 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
 
     try {
       // 🔑 login with backend
-      const res = await authApi.login(email, password);
+      await authApi.login(email, password);
       const me = await authApi.me();
       const user = me.user ?? me;
       onLogin?.(user);

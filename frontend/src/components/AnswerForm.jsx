@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 export function AnswerForm({ onSubmit, onCancel }) {
   const [answerBody, setAnswerBody] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,13 +15,21 @@ export function AnswerForm({ onSubmit, onCancel }) {
     if (!answerBody.trim()) return;
 
     setIsSubmitting(true);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    onSubmit(answerBody.trim());
-    setAnswerBody('');
-    setIsSubmitting(false);
+    setSubmitError('');
+
+    try {
+      await onSubmit?.(answerBody.trim());
+      setAnswerBody('');
+    } catch (err) {
+      const message =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        'Unable to submit answer';
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,6 +74,12 @@ export function AnswerForm({ onSubmit, onCancel }) {
           <div className="prose max-w-none text-sm">
             <p>{answerBody}</p>
           </div>
+        </div>
+      )}
+
+      {submitError && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+          {submitError}
         </div>
       )}
 

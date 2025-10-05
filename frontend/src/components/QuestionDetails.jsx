@@ -1,5 +1,5 @@
 // src/components/QuestionDetails.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronUp, ChevronDown, ArrowLeft, Heart, Share2, Flag, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -31,15 +31,24 @@ function normalizeAnswer(a) {
   };
 }
 
-export function QuestionDetails({ question, onVote, onAddAnswer, onUserClick, currentUser }) {
+export function QuestionDetails({ question, answers: answersProp, onVote, onAddAnswer, onUserClick, currentUser }) {
   // hydrate answers with a local myVote flag so toggling works nicely
   const [answers, setAnswers] = useState(
-    (question.answers || []).map((a) => normalizeAnswer(a))
+    (answersProp ?? question.answers ?? []).map((a) => normalizeAnswer(a))
   );
   const [isFollowing, setIsFollowing] = useState(Boolean(question.isFollowing));
   const [showAnswerForm, setShowAnswerForm] = useState(false);
 
   const isAuthed = Boolean(currentUser);
+
+  useEffect(() => {
+    const incoming = Array.isArray(answersProp)
+      ? answersProp
+      : Array.isArray(question.answers)
+      ? question.answers
+      : [];
+    setAnswers(incoming.map((a) => normalizeAnswer(a)));
+  }, [answersProp, question]);
 
   const formatTimeAgo = (date) => {
     const d = date instanceof Date ? date : new Date(date);
@@ -63,8 +72,9 @@ export function QuestionDetails({ question, onVote, onAddAnswer, onUserClick, cu
   const handleFollow = () => setIsFollowing((f) => !f);
 
   const handleAnswerSubmit = (answerBody) => {
-    onAddAnswer?.(question.id, answerBody);
+    const maybePromise = onAddAnswer?.(question.id, answerBody);
     setShowAnswerForm(false);
+    return maybePromise;
   };
 
   // --- Answer voting (non-negative policy) ----------------------------------

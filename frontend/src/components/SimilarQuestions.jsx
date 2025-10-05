@@ -4,28 +4,49 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 
 export function SimilarQuestions({ currentQuestion, allQuestions, onQuestionClick, maxResults = 5 }) {
+  const questionPool = Array.isArray(allQuestions) ? allQuestions : [];
   // Find similar questions based on shared tags
   const getSimilarQuestions = () => {
-    return allQuestions
-      .filter(q => q.id !== currentQuestion.id)
-      .map(question => {
-        // Calculate similarity score based on shared tags
-        const sharedTags = question.tags.filter(tag => currentQuestion.tags.includes(tag));
-        const similarityScore = sharedTags.length / Math.max(question.tags.length, currentQuestion.tags.length);
-        
+    const currentTags = Array.isArray(currentQuestion?.tags) ? currentQuestion.tags : [];
+    const candidates = questionPool.filter((q) => q && q.id !== currentQuestion.id);
+
+    if (!candidates.length) return [];
+
+    const hasDirectRelations = candidates.some((q) => q?.isDirectRelated);
+
+    if (hasDirectRelations) {
+      return candidates
+        .map((question) => ({
+          question,
+          sharedTags: Array.isArray(question.tags)
+            ? question.tags.filter((tag) => currentTags.includes(tag))
+            : [],
+          similarityScore: 1,
+        }))
+        .slice(0, maxResults);
+    }
+
+    return candidates
+      .map((question) => {
+        const questionTags = Array.isArray(question.tags) ? question.tags : [];
+        const sharedTags = questionTags.filter((tag) => currentTags.includes(tag));
+        const denominator = Math.max(questionTags.length || 1, currentTags.length || 1);
+        const similarityScore = denominator ? sharedTags.length / denominator : 0;
+
         return {
           question,
           sharedTags,
-          similarityScore
+          similarityScore,
         };
       })
-      .filter(item => item.similarityScore > 0) // Only questions with at least one shared tag
+      .filter((item) => item.similarityScore > 0)
       .sort((a, b) => {
-        // Sort by similarity score first, then by votes
         if (b.similarityScore !== a.similarityScore) {
           return b.similarityScore - a.similarityScore;
         }
-        return b.question.votes - a.question.votes;
+        const aVotes = a.question?.votes ?? a.question?.follows_count ?? 0;
+        const bVotes = b.question?.votes ?? b.question?.follows_count ?? 0;
+        return bVotes - aVotes;
       })
       .slice(0, maxResults);
   };
@@ -77,15 +98,15 @@ export function SimilarQuestions({ currentQuestion, allQuestions, onQuestionClic
             <div className="flex items-center space-x-4 text-xs text-gray-500">
               <div className="flex items-center space-x-1">
                 <ThumbsUp className="w-3 h-3" />
-                <span>{question.votes}</span>
+                <span>{question.votes ?? question.follows_count ?? 0}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <MessageSquare className="w-3 h-3" />
-                <span>{question.answers.length}</span>
+                <span>{Array.isArray(question.answers) ? question.answers.length : (question.solutions_count ?? 0)}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <Eye className="w-3 h-3" />
-                <span>{question.views}</span>
+                <span>{question.views ?? 0}</span>
               </div>
               {question.acceptedAnswerId && (
                 <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">

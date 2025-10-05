@@ -41,18 +41,12 @@ export function AdminPanel({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Guard: only admin can access
-  if (currentUser?.role !== "admin") {
-    return (
-      <div className="max-w-3xl mx-auto mt-20 text-center">
-        <p className="text-xl text-red-600 font-semibold">
-          Access denied. Admins only.
-        </p>
-      </div>
-    );
-  }
-
   useEffect(() => {
+    if (currentUser?.role !== "admin") {
+      setLoading(false);
+      return;
+    }
+
     async function fetchData() {
       try {
         setLoading(true);
@@ -75,7 +69,18 @@ export function AdminPanel({ currentUser }) {
       }
     }
     fetchData();
-  }, []);
+  }, [currentUser]);
+
+  // Guard: only admin can access
+  if (currentUser?.role !== "admin") {
+    return (
+      <div className="max-w-3xl mx-auto mt-20 text-center">
+        <p className="text-xl text-red-600 font-semibold">
+          Access denied. Admins only.
+        </p>
+      </div>
+    );
+  }
 
   async function handleReportAction(reportId, action) {
     try {

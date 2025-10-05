@@ -1,6 +1,6 @@
 // src/App.jsx
-import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
 
 // layout & shared
 import { PublicNavbar } from "./components/PublicNavbar";
@@ -13,26 +13,25 @@ import PingProbe from "./components/dev/PingProbe";
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
 import UserHome from "./components/UserHome";
-import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails"; // ✅ use only this
-import { AdminPanel } from "./components/AdminPanel";
+import EnhancedDashboard from "./components/EnhancedDashboard";
+import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails";
+import { EnhancedAdminPanel } from "./components/EnhancedAdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { PasswordReset } from "./components/PasswordReset";
 
-// mock data (for demo mode)
-import { mockNotifications, mockQuestions, mockUsers } from "./data/mockData";
-
 // ✅ API
-import { authApi } from "./services/api";
+import { authApi, notificationsApi } from "./services/api";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState([]);
   const [loadingUser, setLoadingUser] = useState(true);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ---- bootstrap user on refresh ----
   useEffect(() => {
@@ -74,7 +73,52 @@ export default function App() {
     navigate("/");
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    if (loadingUser) return;
+    if (currentUser && location.pathname === "/") {
+      navigate(currentUser.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [loadingUser, currentUser, location.pathname, navigate]);
+
+  const unreadCount = notifications.filter((n) => !n.read && !n.is_read).length;
+
+  const loadNotifications = useCallback(async () => {
+    if (!currentUser) {
+      setNotifications([]);
+      return [];
+    }
+
+    try {
+      const data = await notificationsApi.list({ page: 1, per_page: 20, unread_only: false });
+      const list = data?.notifications ?? data?.items ?? (Array.isArray(data) ? data : []);
+      const normalized = Array.isArray(list) ? list : [];
+      setNotifications(normalized);
+      return normalized;
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+      return [];
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setNotifications([]);
+      return;
+    }
+    loadNotifications();
+  }, [currentUser, loadNotifications]);
+
+  const handleLocalMarkRead = useCallback((id) => {
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === id ? { ...n, read: true, is_read: true } : n
+      )
+    );
+  }, []);
+
+  const handleLocalMarkAll = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true, is_read: true })));
+  }, []);
 
   // ---- route guards ----
   const RequireAuth = ({ children }) => {
@@ -92,6 +136,15 @@ export default function App() {
     return children;
   };
 
+  const currentScreen = (() => {
+    if (location.pathname.startsWith("/admin")) return "admin";
+    if (location.pathname.startsWith("/dashboard")) return "dashboard";
+    if (location.pathname.startsWith("/questions")) return "questions";
+    if (location.pathname.startsWith("/notifications")) return "notifications";
+    if (location.pathname.startsWith("/faq")) return "faq";
+    return "";
+  })();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
@@ -100,6 +153,7 @@ export default function App() {
           user={currentUser}
           onNavigate={navigate}
           onLogout={handleLogout}
+          currentScreen={currentScreen}
           unreadNotifications={unreadCount}
         />
       ) : (
@@ -150,6 +204,15 @@ export default function App() {
             path="/dashboard"
             element={
               <RequireAuth>
+                <EnhancedDashboard currentUser={currentUser} />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/questions"
+            element={
+              <RequireAuth>
                 <UserHome currentUser={currentUser} />
               </RequireAuth>
             }
@@ -195,13 +258,15 @@ export default function App() {
               <RequireAuth>
                 <NotificationsPanel
                   notifications={notifications}
-                  onMarkAsRead={(id) =>
-                    setNotifications((prev) =>
-                      prev.map((n) =>
-                        n.id === id ? { ...n, read: true } : n
-                      )
-                    )
-                  }
+                  onMarkAsRead={async (id) => {
+                    handleLocalMarkRead(id);
+                    await loadNotifications();
+                  }}
+                  onMarkAllRead={async () => {
+                    handleLocalMarkAll();
+                    await loadNotifications();
+                  }}
+                  onRefresh={loadNotifications}
                 />
               </RequireAuth>
             }
@@ -212,11 +277,7 @@ export default function App() {
             path="/admin"
             element={
               <RequireAdmin>
-                <AdminPanel
-                  questions={mockQuestions}
-                  users={mockUsers}
-                  currentUser={currentUser}
-                />
+                <EnhancedAdminPanel currentUser={currentUser} />
               </RequireAdmin>
             }
           />

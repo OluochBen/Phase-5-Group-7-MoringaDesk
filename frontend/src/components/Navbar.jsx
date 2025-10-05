@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Bell, User, LogOut, Home, Shield, Plus, HelpCircle } from "lucide-react";
+import { Search, Bell, User, LogOut, Home, Shield, HelpCircle, ListChecks } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
@@ -69,6 +69,16 @@ export function Navbar({ user, onNavigate, onLogout, currentScreen, unreadNotifi
             >
               <Home className="w-4 h-4" />
               <span>Home</span>
+            </Button>
+
+            <Button
+              variant={currentScreen === "questions" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onNavigate("/questions")}
+              className="hidden sm:flex items-center space-x-1"
+            >
+              <ListChecks className="w-4 h-4" />
+              <span>Questions</span>
             </Button>
 
             <Button

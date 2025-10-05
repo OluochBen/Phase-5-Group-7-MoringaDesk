@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { problemsApi } from "../services/api";
-import { Search as SearchIcon, TrendingUp, Eye, Gift } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { TrendingUp, Users, MessageSquare, Tag as TagIcon } from "lucide-react";
+import { Card, CardContent } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
@@ -35,22 +35,28 @@ function toQuestion(row) {
   const src = row?.attributes ? { id: row.id, ...row.attributes } : row || {};
   const id = src.id ?? src.problem_id ?? src._id ?? src.uuid;
 
+  const rawTags = Array.isArray(src.tags)
+    ? src.tags.map((t) => (typeof t === "string" ? t : t?.name)).filter(Boolean)
+    : [];
+
+  const rawAnswers = Array.isArray(src.answers) ? src.answers : [];
+  const answersCount = rawAnswers.length || src.answers_count || src.solutions_count || 0;
+  const answers = rawAnswers.length
+    ? rawAnswers
+    : Array.from({ length: answersCount }, (_, idx) => ({ id: `${id}-answer-${idx}` }));
+
   return {
     id,
     title: src.title ?? "(untitled)",
     body: src.description ?? src.body ?? "",
-    tags: (src.tags || []).map((t) => (typeof t === "string" ? t : t?.name)),
+    tags: rawTags,
     votes: src.votes ?? src.score ?? 0,
     views: src.views ?? 0,
     bounty: src.bounty ?? 0,
+    followsCount: src.follows_count ?? src.followers ?? 0,
+    answers,
+    answersCount,
     timestamp: new Date(src.created_at || src.createdAt || Date.now()),
-    answers: Array.from({
-      length: src.answers_count ?? src.solutions_count ?? 0,
-    }).map((_, i) => ({
-      id: `${id}-a${i}`,
-      authorName: src.last_answer_by?.name ?? "—",
-      body: src.last_answer_excerpt ?? "",
-    })),
     authorId: src.author?.id ?? src.user_id ?? 0,
     authorName: src.author?.name ?? src.user_name ?? "Unknown",
     isFollowing: Boolean(src.is_following),
@@ -64,7 +70,6 @@ export default function UserHome({ currentUser }) {
   const page = Number(sp.get("page") || 1);
   const q = sp.get("q") || "";
   const sort = sp.get("sort") || "newest";
-  const tab = sp.get("tab") || "all";
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,15 +102,6 @@ export default function UserHome({ currentUser }) {
     };
   }, [page, q]);
 
-  const stats = useMemo(() => {
-    const totalQ = total ?? rows.length;
-    const answered = rows.filter((q) => (q.answers?.length || 0) > 0).length;
-    const views = rows.reduce((s, q) => s + (q.views || 0), 0);
-    const bounty = rows.reduce((s, q) => s + (q.bounty || 0), 0);
-    const answeredRate = totalQ ? Math.round((answered / totalQ) * 100) : 0;
-    return { total: totalQ, answeredRate, views, bounty };
-  }, [rows, total]);
-
   const filtered = useMemo(() => {
     return [...rows].sort((a, b) => {
       if (sort === "votes") return (b.votes || 0) - (a.votes || 0);
@@ -113,6 +109,37 @@ export default function UserHome({ currentUser }) {
       return (b.timestamp?.getTime?.() || 0) - (a.timestamp?.getTime?.() || 0);
     });
   }, [rows, sort]);
+
+  const dashboardStats = useMemo(() => {
+    if (!rows.length) {
+      return { votes: 0, follows: 0, answers: 0, tags: 0 };
+    }
+    const tagSet = new Set();
+    let votes = 0;
+    let follows = 0;
+    let answersTotal = 0;
+
+    rows.forEach((q) => {
+      votes += q.votes || 0;
+      follows += q.followsCount || 0;
+      answersTotal +=
+        typeof q.answersCount === "number"
+          ? q.answersCount
+          : Array.isArray(q.answers)
+          ? q.answers.length
+          : 0;
+      (q.tags || []).forEach((tag) => {
+        if (tag) tagSet.add(tag.toLowerCase());
+      });
+    });
+
+    return {
+      votes,
+      follows,
+      answers: answersTotal,
+      tags: tagSet.size,
+    };
+  }, [rows]);
 
   const update = (patch) => {
     const next = new URLSearchParams(sp);
@@ -128,6 +155,47 @@ export default function UserHome({ currentUser }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">Questions</h1>
+
+      {rows.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Votes</p>
+                <p className="text-2xl font-semibold">{dashboardStats.votes.toLocaleString()}</p>
+              </div>
+              <TrendingUp className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Followers</p>
+                <p className="text-2xl font-semibold">{dashboardStats.follows.toLocaleString()}</p>
+              </div>
+              <Users className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Answers Logged</p>
+                <p className="text-2xl font-semibold">{dashboardStats.answers.toLocaleString()}</p>
+              </div>
+              <MessageSquare className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Unique Tags</p>
+                <p className="text-2xl font-semibold">{dashboardStats.tags.toLocaleString()}</p>
+              </div>
+              <TagIcon className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {loading && <Card><CardContent className="p-6">Loading…</CardContent></Card>}
       {err && <Card><CardContent className="p-6 text-red-600">{err}</CardContent></Card>}

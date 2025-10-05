@@ -37,16 +37,18 @@ export function Dashboard({ questions, onQuestionClick, onUserClick, onVote, cur
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case 'votes':
+        case 'votes': {
           return b.votes - a.votes;
-        case 'activity':
-          const aLatest = a.answers.length > 0 
-            ? Math.max(a.timestamp.getTime(), ...a.answers.map(ans => ans.timestamp.getTime()))
+        }
+        case 'activity': {
+          const aLatest = a.answers.length > 0
+            ? Math.max(a.timestamp.getTime(), ...a.answers.map((ans) => ans.timestamp.getTime()))
             : a.timestamp.getTime();
-          const bLatest = b.answers.length > 0 
-            ? Math.max(b.timestamp.getTime(), ...b.answers.map(ans => ans.timestamp.getTime()))
+          const bLatest = b.answers.length > 0
+            ? Math.max(b.timestamp.getTime(), ...b.answers.map((ans) => ans.timestamp.getTime()))
             : b.timestamp.getTime();
           return bLatest - aLatest;
+        }
         case 'newest':
         default:
           return b.timestamp.getTime() - a.timestamp.getTime();

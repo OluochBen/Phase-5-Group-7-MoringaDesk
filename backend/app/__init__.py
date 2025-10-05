@@ -7,10 +7,12 @@ from flask_socketio import SocketIO
 import os
 from dotenv import load_dotenv
 
+
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 socketio = SocketIO()
+
 
 def create_app():
     app = Flask(__name__)
@@ -25,8 +27,6 @@ def create_app():
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
 
-    print(f"Database URL: {db_url}")
-
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
@@ -35,23 +35,30 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    socketio.init_app(app, cors_allowed_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://moringadesk-gcvu.onrender.com"
-    ])
+    socketio.init_app(
+        app,
+        cors_allowed_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://moringadesk-gcvu.onrender.com",
+        ],
+    )
 
     # --- CORS ---
     CORS(
         app,
-        resources={r"/*": {"origins": [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "https://moringadesk-gcvu.onrender.com"  # ✅ deployed frontend
-        ]}},
+        resources={
+            r"/*": {
+                "origins": [
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173",
+                    "https://moringadesk-gcvu.onrender.com",
+                ]
+            }
+        },
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     )
 
     # --- Blueprints ---
@@ -61,6 +68,8 @@ def create_app():
     from .routes.admin import admin_bp
     from .routes.solutions import solutions_bp
     from .routes.notifications import notifications_bp
+    from .routes.tags import tags_bp
+    from .routes.profile import profile_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(problems_bp, url_prefix="/problems")
@@ -68,9 +77,14 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(solutions_bp, url_prefix="/solutions")
     app.register_blueprint(notifications_bp, url_prefix="/notifications")
+    app.register_blueprint(tags_bp, url_prefix="/tags")
+    app.register_blueprint(profile_bp, url_prefix="/profile")
 
-    # --- WebSocket Events ---
-    from .events import websocket_events
+    # --- WebSocket events ---
+    try:
+        from . import events  # noqa: F401
+    except ImportError:
+        pass
 
     # --- Health check ---
     @app.route("/ping", methods=["GET", "OPTIONS"])

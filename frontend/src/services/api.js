@@ -79,17 +79,18 @@ export const problemsApi = {
       .get("/problems", { params: { page, per_page, problem_type, search, sort } })
       .then((r) => r.data),
 
-  get: (id) => api.get(`/problems/${id}`).then((r) => r.data),
+  get: (id) =>
+    api.get(`/problems/${id}`).then((r) => r.data?.item ?? r.data),
 
   create: ({ title, description, problem_type, tag_ids = [] }) =>
     api
       .post("/problems", { title, description, problem_type, tag_ids })
-      .then((r) => r.data),
+      .then((r) => r.data?.item ?? r.data),
 
   update: (id, { title, description, problem_type, tag_ids = [] }) =>
     api
       .put(`/problems/${id}`, { title, description, problem_type, tag_ids })
-      .then((r) => r.data),
+      .then((r) => r.data?.item ?? r.data),
 
   delete: (id) => api.delete(`/problems/${id}`).then((r) => r.data),
 };
@@ -101,24 +102,38 @@ export const solutionsApi = {
       .then((r) => r.data),
 
   get: (problemId, solutionId) =>
-    api.get(`/problems/${problemId}/solutions/${solutionId}`).then((r) => r.data),
+    api
+      .get(`/problems/${problemId}/solutions/${solutionId}`)
+      .then((r) => r.data?.item ?? r.data),
 
   create: (problemId, { content }) =>
-    api.post(`/problems/${problemId}/solutions`, { content }).then((r) => r.data),
+    api
+      .post(`/problems/${problemId}/solutions`, { content })
+      .then((r) => r.data?.item ?? r.data),
 
   update: (problemId, solutionId, { content }) =>
-    api.put(`/problems/${problemId}/solutions/${solutionId}`, { content }).then((r) => r.data),
+    api
+      .put(`/problems/${problemId}/solutions/${solutionId}`, { content })
+      .then((r) => r.data?.item ?? r.data),
 
   delete: (problemId, solutionId) =>
     api.delete(`/problems/${problemId}/solutions/${solutionId}`).then((r) => r.data),
 };
 
 export const votesApi = {
-  voteSolution: (problemId, solutionId, vote_type) =>
-    api.post(`/problems/${problemId}/solutions/${solutionId}/vote`, { vote_type }).then((r) => r.data),
+  voteSolution: (solutionId, vote_type, problemId) => {
+    const url = problemId
+      ? `/problems/${problemId}/solutions/${solutionId}/vote`
+      : `/solutions/${solutionId}/vote`;
+    return api.post(url, { vote_type }).then((r) => r.data?.item ?? r.data);
+  },
 
-  removeVote: (problemId, solutionId) =>
-    api.delete(`/problems/${problemId}/solutions/${solutionId}/vote`).then((r) => r.data),
+  removeVote: (solutionId, problemId) => {
+    const url = problemId
+      ? `/problems/${problemId}/solutions/${solutionId}/vote`
+      : `/solutions/${solutionId}/vote`;
+    return api.delete(url).then((r) => r.data?.item ?? r.data);
+  },
 
   getVotes: (solutionId) =>
     api.get(`/solutions/${solutionId}/votes`).then((r) => r.data),

@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
 
 // layout & shared
 import { PublicNavbar } from "./components/PublicNavbar";
@@ -13,16 +13,14 @@ import PingProbe from "./components/dev/PingProbe";
 import { Homepage } from "./components/Homepage";
 import { AuthPage } from "./components/AuthPage";
 import UserHome from "./components/UserHome";
-import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails"; // ✅ use only this
-import { AdminPanel } from "./components/AdminPanel";
+import EnhancedDashboard from "./components/EnhancedDashboard";
+import EnhancedQuestionDetails from "./components/EnhancedQuestionDetails";
+import { EnhancedAdminPanel } from "./components/EnhancedAdminPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { PasswordReset } from "./components/PasswordReset";
-
-// mock data (for demo mode)
-import { mockQuestions, mockUsers } from "./data/mockData";
 
 // ✅ API
 import { authApi, notificationsApi } from "./services/api";
@@ -33,24 +31,24 @@ export default function App() {
   const [loadingUser, setLoadingUser] = useState(true);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // ---- load notifications ----
   const loadNotifications = useCallback(async () => {
     if (!currentUser) {
-      console.log("No current user, skipping notification load");
-      return;
+      setNotifications([]);
+      return [];
     }
-    
-    console.log("Loading notifications for user:", currentUser.id);
+
     try {
       const data = await notificationsApi.list({ page: 1, per_page: 50, unread_only: false });
-      console.log("API response:", data);
       const list = data?.notifications ?? data?.items ?? (Array.isArray(data) ? data : []);
-      console.log("Processed list:", list);
-      setNotifications(Array.isArray(list) ? list : []);
+      const normalized = Array.isArray(list) ? list : [];
+      setNotifications(normalized);
+      return normalized;
     } catch (err) {
-      console.error("Failed to load notifications:", err);
+      console.error("Failed to load notifications", err);
       setNotifications([]);
+      return [];
     }
   }, [currentUser]);
 
@@ -76,42 +74,26 @@ export default function App() {
     })();
   }, []);
 
-  // ---- load notifications when user changes ----
+  // ---- sync notifications with current user ----
   useEffect(() => {
-    if (currentUser) {
-      loadNotifications();
-    } else {
+    if (!currentUser) {
       setNotifications([]);
+      return;
     }
+    loadNotifications();
   }, [currentUser, loadNotifications]);
 
-  // ---- setInterval to periodically fetch notifications ----
+  // optional periodic refresh
   useEffect(() => {
-    if (!currentUser) return;
-
-    // Set up interval to fetch notifications every 30 seconds
-    const interval = setInterval(() => {
-      console.log("Fetching notifications via interval...");
-      loadNotifications();
-    }, 30000); // 30 seconds
-
-    // Cleanup interval on unmount or when user changes
-    return () => {
-      console.log("Clearing notification interval");
-      clearInterval(interval);
-    };
+    if (!currentUser) return undefined;
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, [currentUser, loadNotifications]);
 
   // ---- auth handlers ----
   const handleLogin = (user) => {
     setCurrentUser(user);
-
-    // role-based redirect
-    if (user.role === "admin") {
-      navigate("/admin");
-    } else {
-      navigate("/dashboard");
-    }
+    navigate(user.role === "admin" ? "/admin" : "/dashboard");
   };
 
   const handleLogout = () => {
@@ -121,9 +103,25 @@ export default function App() {
     navigate("/");
   };
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-  console.log("Notifications:", notifications);
-  console.log("Unread count:", unreadCount);
+  // redirect authenticated users away from landing page
+  useEffect(() => {
+    if (loadingUser) return;
+    if (currentUser && location.pathname === "/") {
+      navigate(currentUser.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [loadingUser, currentUser, location.pathname, navigate]);
+
+  const unreadCount = notifications.filter((n) => !n.read && !n.is_read).length;
+
+  const handleLocalMarkRead = useCallback((id) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n))
+    );
+  }, []);
+
+  const handleLocalMarkAll = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true, is_read: true })));
+  }, []);
 
   // ---- route guards ----
   const RequireAuth = ({ children }) => {
@@ -141,6 +139,15 @@ export default function App() {
     return children;
   };
 
+  const currentScreen = (() => {
+    if (location.pathname.startsWith("/admin")) return "admin";
+    if (location.pathname.startsWith("/dashboard")) return "dashboard";
+    if (location.pathname.startsWith("/questions")) return "questions";
+    if (location.pathname.startsWith("/notifications")) return "notifications";
+    if (location.pathname.startsWith("/faq")) return "faq";
+    return "";
+  })();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
@@ -149,14 +156,11 @@ export default function App() {
           user={currentUser}
           onNavigate={navigate}
           onLogout={handleLogout}
-          currentScreen="dashboard"
+          currentScreen={currentScreen}
           unreadNotifications={unreadCount}
         />
       ) : (
-        <PublicNavbar
-          onLogin={() => navigate("/login")}
-          onSignUp={() => navigate("/register")}
-        />
+        <PublicNavbar onLogin={() => navigate("/login")} onSignUp={() => navigate("/register")} />
       )}
 
       {/* Routes */}
@@ -167,37 +171,29 @@ export default function App() {
           {/* Auth */}
           <Route
             path="/login"
-            element={
-              <AuthPage
-                defaultTab="login"
-                onLogin={handleLogin}
-                onRegister={handleLogin}
-              />
-            }
+            element={<AuthPage defaultTab="login" onLogin={handleLogin} onRegister={handleLogin} />}
           />
           <Route
             path="/register"
-            element={
-              <AuthPage
-                defaultTab="signup"
-                onLogin={handleLogin}
-                onRegister={handleLogin}
-              />
-            }
+            element={<AuthPage defaultTab="signup" onLogin={handleLogin} onRegister={handleLogin} />}
           />
           <Route
             path="/reset-password"
-            element={
-              <PasswordReset
-                onSuccess={() => navigate("/login")}
-                onClose={() => navigate("/login")}
-              />
-            }
+            element={<PasswordReset onSuccess={() => navigate("/login")} onClose={() => navigate("/login")} />}
           />
 
           {/* Dashboard */}
           <Route
             path="/dashboard"
+            element={
+              <RequireAuth>
+                <EnhancedDashboard currentUser={currentUser} />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/questions"
             element={
               <RequireAuth>
                 <UserHome currentUser={currentUser} />
@@ -215,7 +211,7 @@ export default function App() {
             }
           />
 
-          {/* Single Question - ✅ only EnhancedQuestionDetails */}
+          {/* Single Question */}
           <Route
             path="/questions/:id"
             element={
@@ -245,13 +241,15 @@ export default function App() {
               <RequireAuth>
                 <NotificationsPanel
                   notifications={notifications}
-                  onMarkAsRead={(id) => {
-                    setNotifications((prev) =>
-                      prev.map((n) =>
-                        n.id === id ? { ...n, is_read: true } : n
-                      )
-                    );
+                  onMarkAsRead={async (id) => {
+                    handleLocalMarkRead(id);
+                    await loadNotifications();
                   }}
+                  onMarkAllRead={async () => {
+                    handleLocalMarkAll();
+                    await loadNotifications();
+                  }}
+                  onRefresh={loadNotifications}
                 />
               </RequireAuth>
             }
@@ -262,11 +260,7 @@ export default function App() {
             path="/admin"
             element={
               <RequireAdmin>
-                <AdminPanel
-                  questions={mockQuestions}
-                  users={mockUsers}
-                  currentUser={currentUser}
-                />
+                <EnhancedAdminPanel currentUser={currentUser} />
               </RequireAdmin>
             }
           />

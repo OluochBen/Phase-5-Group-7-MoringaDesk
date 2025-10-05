@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { problemsApi, authApi } from "../services/api";
+import { profileApi } from "../services/api";
 
 export function EnhancedUserProfile({ currentUser }) {
   const { id } = useParams(); // user id in the URL
   const [user, setUser] = useState(null);
   const [myQuestions, setMyQuestions] = useState([]);
+  const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -21,41 +22,27 @@ export function EnhancedUserProfile({ currentUser }) {
         setLoading(true);
         setErr("");
 
-        // If the route is my profile, prefer the already-known currentUser
-        let u = isMe ? currentUser : null;
-
-        // If we don't have a user object, try to fetch the authenticated user as a fallback
-        if (!u) {
-          try {
-            const me = await authApi.me(); // requires a valid token
-            if (String(me?.id) === String(id)) u = me;
-          } catch {
-            // not logged in or not the same user; we’ll render minimal info
+        const targetId = String(id).toLowerCase() === "me" ? currentUser?.id : id;
+        if (!targetId) {
+          if (alive) {
+            setErr("User not found");
+            setLoading(false);
           }
+          return;
         }
 
-        if (!u) {
-          // minimal object so the header can render something
-          u = { id, name: `User #${id}` };
-        }
+        const data = await profileApi.get(targetId);
+        if (!alive) return;
 
-        if (alive) setUser(u);
-
-        // Try loading this user's questions using a filter (backend may ignore it gracefully)
-        try {
-          const list = await problemsApi.list({
-            page: 1,
-            per_page: 20,
-            created_by: id,
-          });
-          const items = list.questions ?? list.problems ?? list.items ?? [];
-          if (alive) setMyQuestions(items);
-        } catch {
-          // If the API doesn't support created_by yet, just skip the list
-          if (alive) setMyQuestions([]);
+        const profileData = data?.user || data;
+        setUser(profileData || { id: targetId, name: `User #${targetId}` });
+        setMyQuestions(Array.isArray(data?.questions) ? data.questions : []);
+        setAnswers(Array.isArray(data?.answers) ? data.answers : []);
+      } catch (error) {
+        if (alive) {
+          console.error('Failed to load profile', error);
+          setErr("Failed to load profile");
         }
-      } catch (e) {
-        if (alive) setErr("Failed to load profile");
       } finally {
         if (alive) setLoading(false);
       }
@@ -106,6 +93,25 @@ export function EnhancedUserProfile({ currentUser }) {
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
               {q.description}
             </p>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Answers</h2>
+        {answers.length === 0 && (
+          <div className="text-sm text-muted-foreground">
+            No answers to display.
+          </div>
+        )}
+        {answers.map((a) => (
+          <div key={a.id} className="border rounded p-4">
+            <div className="text-sm font-medium text-slate-700">
+              {a.content || a.body || "Answer"}
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              Votes: {a.vote_count ?? a.votes ?? 0}
+            </div>
           </div>
         ))}
       </section>

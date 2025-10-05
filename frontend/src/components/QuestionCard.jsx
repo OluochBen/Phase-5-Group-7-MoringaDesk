@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { ThumbsUp, MessageCircle, Eye } from "lucide-react";
+import { ThumbsUp, MessageCircle, Eye, Users } from "lucide-react";
 
 /**
  * QuestionCard
@@ -11,10 +11,8 @@ import { ThumbsUp, MessageCircle, Eye } from "lucide-react";
  * - question: { id, title, body, tags[], votes, views, answers[], authorName, timestamp }
  * - onClick: function → when user clicks card (go to details)
  * - onUserClick: function(uid) → click on author name
- * - onVote: function(qid, direction) → for question-level votes (optional)
- * - currentUser: logged in user object (optional)
  */
-export function QuestionCard({ question, onClick, onUserClick, onVote, currentUser }) {
+export function QuestionCard({ question, onClick, onUserClick }) {
   const {
     id,
     title,
@@ -23,10 +21,21 @@ export function QuestionCard({ question, onClick, onUserClick, onVote, currentUs
     votes = 0,
     views = 0,
     answers = [],
+    answersCount,
+    followsCount = 0,
     authorId,
     authorName,
     timestamp,
   } = question;
+
+  const answerTotal =
+    typeof answersCount === "number"
+      ? answersCount
+      : Array.isArray(answers)
+      ? answers.length
+      : 0;
+
+  const safeTags = Array.isArray(tags) ? tags.filter(Boolean) : [];
 
   return (
     <Card
@@ -45,7 +54,7 @@ export function QuestionCard({ question, onClick, onUserClick, onVote, currentUs
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mt-2">
-            {tags.map((t) => (
+            {safeTags.map((t) => (
               <Badge key={t} variant="secondary">
                 {t}
               </Badge>
@@ -61,11 +70,15 @@ export function QuestionCard({ question, onClick, onUserClick, onVote, currentUs
               </span>
               <span className="flex items-center gap-1">
                 <MessageCircle className="w-4 h-4 text-gray-400" />
-                {answers.length}
+                {answerTotal}
               </span>
               <span className="flex items-center gap-1">
                 <Eye className="w-4 h-4 text-gray-400" />
                 {views}
+              </span>
+              <span className="flex items-center gap-1">
+                <Users className="w-4 h-4 text-gray-400" />
+                {followsCount}
               </span>
             </div>
             <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 // src/components/EnhancedQuestionDetails.jsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { problemsApi, solutionsApi } from "../services/api";
 import { Card, CardContent } from "./ui/card";
@@ -118,10 +118,13 @@ export default function EnhancedQuestionDetails({ currentUser }) {
   const [relatedQuestions, setRelatedQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const hasLoadedRef = useRef(false);
 
-  const refreshQuestion = useCallback(async (signal) => {
+  const refreshQuestion = useCallback(async (signal, { showSpinner = false } = {}) => {
       try {
-        setLoading(true);
+        if (showSpinner || !hasLoadedRef.current) {
+          setLoading(true);
+        }
         setError(null);
 
         const payload = await problemsApi.get(id);
@@ -135,15 +138,17 @@ export default function EnhancedQuestionDetails({ currentUser }) {
               .filter(Boolean)
           : [];
 
-        const relatedFromPayload = Array.isArray(question.relatedQuestions)
+       const relatedFromPayload = Array.isArray(question.relatedQuestions)
           ? question.relatedQuestions
           : [];
 
        setProblem({ ...question, answers: mappedAnswers, relatedQuestions: relatedFromPayload });
        setAnswers(mappedAnswers);
         setRelatedQuestions(relatedFromPayload);
+        hasLoadedRef.current = true;
       } catch (err) {
         if (signal?.aborted) return;
+        hasLoadedRef.current = false;
         setError(err.response?.data?.error || err.message || "Failed to load question");
       } finally {
         if (!signal?.aborted) {
@@ -154,7 +159,7 @@ export default function EnhancedQuestionDetails({ currentUser }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    refreshQuestion(controller.signal);
+    refreshQuestion(controller.signal, { showSpinner: true });
     return () => controller.abort();
   }, [refreshQuestion]);
 

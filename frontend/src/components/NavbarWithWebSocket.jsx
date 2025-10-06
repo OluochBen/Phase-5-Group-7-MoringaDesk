@@ -11,7 +11,7 @@ const NavbarWithWebSocket = ({
   onLogout,
   baseURL = 'http://localhost:5000' // WebSocket server URL
 }) => {
-  const { isConnected, unreadCount, notifications } = useWebSocket(
+  const { isConnected, unreadCount } = useWebSocket(
     baseURL, 
     user?.token, 
     !!user?.token // Only connect if user is logged in
@@ -59,7 +59,7 @@ const NavbarWithWebSocket = ({
 
           <div className="flex items-center space-x-4">
             {/* WebSocket Connection Status (optional) */}
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.DEV && (
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} 
                    title={isConnected ? 'WebSocket Connected' : 'WebSocket Disconnected'} />
             )}

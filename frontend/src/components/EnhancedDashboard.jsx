@@ -25,11 +25,19 @@ function normalizeQuestion(raw) {
   if (!raw) return null;
   const author = raw.author || {};
   const timestamp = raw.created_at ? new Date(raw.created_at) : new Date();
+  const normalizedTags = (raw.tags || [])
+    .map((tag) => {
+      if (typeof tag === "string") return tag;
+      if (tag && typeof tag.name === "string") return tag.name;
+      return "";
+    })
+    .filter(Boolean)
+    .map((tag) => tag.toLowerCase());
   return {
     id: raw.id,
     title: raw.title ?? raw.name ?? "(untitled)",
     description: raw.description ?? raw.body ?? "",
-    tags: (raw.tags || []).map((tag) => (typeof tag === "string" ? tag : tag?.name).toLowerCase()),
+    tags: normalizedTags,
     votes: raw.votes ?? raw.score ?? 0,
     views: raw.views ?? raw.view_count ?? 0,
     bounty: raw.bounty ?? 0,

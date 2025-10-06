@@ -22,7 +22,7 @@ import {
   Download,
   Calendar,
 } from 'lucide-react';
-import api from '../services/api';
+import api, { problemsApi } from '../services/api';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -62,122 +62,6 @@ const TIME_RANGE_LABELS = {
   '30d': 'Last 30 days',
   '90d': 'Last 90 days',
 };
-
-
-const defaultTeamMembers = [
-  {
-    id: 'm-1',
-    name: 'Jane Smith',
-    role: 'Lead Moderator',
-    status: 'Online',
-    shift: '08:00 – 16:00 UTC',
-    load: 74,
-  },
-  {
-    id: 'm-2',
-    name: 'Omar Ali',
-    role: 'Trust & Safety',
-    status: 'Reviewing queue',
-    shift: '12:00 – 20:00 UTC',
-    load: 52,
-  },
-  {
-    id: 'm-3',
-    name: 'Priya Patel',
-    role: 'Escalations',
-    status: 'On break',
-    shift: '09:00 – 17:00 UTC',
-    load: 41,
-  },
-  {
-    id: 'm-4',
-    name: 'Liam Chen',
-    role: 'Automation Analyst',
-    status: 'Online',
-    shift: 'Remote',
-    load: 63,
-  },
-];
-
-const moderationInsights = [
-  {
-    id: 'mi-1',
-    title: 'First response time',
-    value: '2h 18m',
-    change: '-12%',
-    tone: 'positive',
-  },
-  {
-    id: 'mi-2',
-    title: 'Resolution rate',
-    value: '86%',
-    change: '+4%',
-    tone: 'positive',
-  },
-  {
-    id: 'mi-3',
-    title: 'Appeals awaiting review',
-    value: '7',
-    change: '+2',
-    tone: 'attention',
-  },
-];
-
-const automationRules = [
-  { id: 'auto-1', label: 'Auto-hide high risk spam', status: 'active' },
-  { id: 'auto-2', label: 'Escalate repeated flags', status: 'active' },
-  { id: 'auto-3', label: 'Notify mentors on trending bugs', status: 'paused' },
-];
-
-const savedExports = [
-  {
-    id: 'exp-1',
-    name: 'Weekly moderation summary',
-    createdAt: '2024-01-13',
-    format: 'CSV',
-  },
-  {
-    id: 'exp-2',
-    name: 'Flagged content log',
-    createdAt: '2024-01-11',
-    format: 'XLSX',
-  },
-];
-
-
-const complianceChecks = [
-  {
-    id: 'comp-1',
-    label: 'Trust & Safety policy coverage',
-    status: 'pass',
-    updatedAt: '2024-01-14T17:00:00Z',
-  },
-  {
-    id: 'comp-2',
-    label: 'Moderator SLA adherence',
-    status: 'attention',
-    updatedAt: '2024-01-15T08:15:00Z',
-  },
-  {
-    id: 'comp-3',
-    label: 'Automation accuracy audit',
-    status: 'pass',
-    updatedAt: '2024-01-14T20:45:00Z',
-  },
-];
-
-const trendingTags = [
-  { tag: 'security', delta: '+18%' },
-  { tag: 'react', delta: '+12%' },
-  { tag: 'python', delta: '+9%' },
-  { tag: 'career-advice', delta: '+5%' },
-];
-
-const fallbackLeaders = [
-  { id: 'leader-1', name: 'Maya Lopez', contributions: 124, reputation: 2860 },
-  { id: 'leader-2', name: 'Hassan Ibrahim', contributions: 109, reputation: 2515 },
-  { id: 'leader-3', name: 'Emily Zhao', contributions: 98, reputation: 2380 },
-];
 
 function getStatusBadgeClasses(status) {
   switch (status) {
@@ -243,6 +127,51 @@ function formatCategoryLabel(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function safeParseDate(value) {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDuration(minutes) {
+  if (!minutes || !Number.isFinite(minutes) || minutes <= 0) {
+    return '—';
+  }
+  const totalMinutes = Math.round(minutes);
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (hours && mins) {
+    return `${hours}h ${mins}m`;
+  }
+  if (hours) {
+    return `${hours}h`;
+  }
+  return `${mins}m`;
+}
+
+function formatActionLabel(value) {
+  if (!value) {
+    return '';
+  }
+  return value
+    .toString()
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeText(value) {
+  if (typeof value === 'string') {
+    return value.toLowerCase();
+  }
+  if (value === null || value === undefined) {
+    return '';
+  }
+  return String(value).toLowerCase();
+}
+
 export function EnhancedAdminPanel({ currentUser }) {
   const [activeSection, setActiveSection] = useState('overview');
   const [reports, setReports] = useState([]);
@@ -261,6 +190,7 @@ export function EnhancedAdminPanel({ currentUser }) {
     answer: '',
     category: 'moderation',
   });
+  const [trendingTopics, setTrendingTopics] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -306,6 +236,61 @@ export function EnhancedAdminPanel({ currentUser }) {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const data = await problemsApi.list({ page: 1, per_page: 50 });
+        if (!active) {
+          return;
+        }
+
+        const source = Array.isArray(data?.questions)
+          ? data.questions
+          : Array.isArray(data?.items)
+          ? data.items
+          : [];
+
+        const tagCounts = new Map();
+        source.forEach((item) => {
+          const tagList = Array.isArray(item?.tags) ? item.tags : [];
+          tagList.forEach((tag) => {
+            const value =
+              typeof tag === 'string'
+                ? tag.trim().toLowerCase()
+                : typeof tag?.name === 'string'
+                ? tag.name.trim().toLowerCase()
+                : '';
+            if (!value) {
+              return;
+            }
+            tagCounts.set(value, (tagCounts.get(value) || 0) + 1);
+          });
+        });
+
+        const ranked = Array.from(tagCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([tag, count]) => ({
+            tag,
+            count,
+          }));
+
+        setTrendingTopics(ranked);
+      } catch (err) {
+        if (active) {
+          console.error('Failed to load trending topics', err);
+          setTrendingTopics([]);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const reloadReports = useCallback(async () => {
     const data = await api.get('/admin/reports').then((res) => res.data);
     const list = Array.isArray(data) ? data : data?.reports ?? [];
@@ -332,11 +317,18 @@ export function EnhancedAdminPanel({ currentUser }) {
   const moderationStats = useMemo(() => {
     const totalFromStats = (stats?.pendingReports ?? 0) + (stats?.resolvedReports ?? 0);
     const totalReports = reports.length || totalFromStats;
-    const pending = reports.filter((report) => report.status === 'pending').length || stats?.pendingReports || 0;
-    const resolved = reports.filter((report) => report.status === 'resolved').length || stats?.resolvedReports || 0;
-    const dismissed = reports.filter((report) => report.status === 'dismissed').length;
+    const pending =
+      reports.filter((report) => normalizeText(report?.status) === 'pending').length ||
+      stats?.pendingReports ||
+      0;
+    const resolved =
+      reports.filter((report) => normalizeText(report?.status) === 'resolved').length ||
+      stats?.resolvedReports ||
+      0;
+    const dismissed = reports.filter((report) => normalizeText(report?.status) === 'dismissed').length;
     const highPriority = reports.filter(
-      (report) => String(report.priority).toLowerCase() === 'high' && report.status === 'pending'
+      (report) =>
+        String(report.priority).toLowerCase() === 'high' && normalizeText(report?.status) === 'pending'
     ).length;
     const resolutionRate = totalReports ? Math.round((resolved / totalReports) * 100) : 0;
 
@@ -350,6 +342,66 @@ export function EnhancedAdminPanel({ currentUser }) {
       averageResponseTime: pending ? '—' : '—',
     };
   }, [reports, stats]);
+
+  const moderationInsights = useMemo(() => {
+    const now = Date.now();
+    const pendingList = reports.filter((report) => normalizeText(report?.status) === 'pending');
+    const pendingLast24 = pendingList.filter((report) => {
+      const date = safeParseDate(report?.timestamp ?? report?.created_at);
+      return date ? now - date.getTime() <= 24 * 60 * 60 * 1000 : false;
+    }).length;
+    const pendingAges = pendingList
+      .map((report) => {
+        const date = safeParseDate(report?.timestamp ?? report?.created_at);
+        return date ? (now - date.getTime()) / 60000 : null;
+      })
+      .filter((value) => value !== null);
+    const avgPendingMinutes = pendingAges.length
+      ? pendingAges.reduce((sum, value) => sum + value, 0) / pendingAges.length
+      : 0;
+    const resolvedLast7 = auditLogs.filter((log) => {
+      const action = normalizeText(log?.action);
+      if (!action || !action.includes('resolve')) {
+        return false;
+      }
+      const date = safeParseDate(log?.timestamp);
+      return date ? now - date.getTime() <= 7 * 24 * 60 * 60 * 1000 : false;
+    }).length;
+    const dismissedLast7 = auditLogs.filter((log) => {
+      const action = normalizeText(log?.action);
+      if (!action || !action.includes('dismiss')) {
+        return false;
+      }
+      const date = safeParseDate(log?.timestamp);
+      return date ? now - date.getTime() <= 7 * 24 * 60 * 60 * 1000 : false;
+    }).length;
+
+    return [
+      {
+        id: 'mi-queue',
+        title: 'Pending queue',
+        value: numberFormatter.format(moderationStats.pending),
+        change: `${numberFormatter.format(pendingLast24)} new today`,
+        tone: moderationStats.pending > 0 ? 'attention' : 'positive',
+      },
+      {
+        id: 'mi-resolution',
+        title: 'Resolution rate',
+        value: `${moderationStats.resolutionRate}%`,
+        change: `${numberFormatter.format(resolvedLast7)} resolved past 7d`,
+        tone: moderationStats.resolutionRate >= 80 ? 'positive' : 'attention',
+      },
+      {
+        id: 'mi-age',
+        title: 'Average pending age',
+        value: formatDuration(avgPendingMinutes),
+        change: dismissedLast7
+          ? `${numberFormatter.format(dismissedLast7)} dismissed past 7d`
+          : 'Monitoring queue',
+        tone: avgPendingMinutes > 240 ? 'attention' : 'positive',
+      },
+    ];
+  }, [auditLogs, moderationStats, numberFormatter, reports]);
 
   const totalQuestions = stats?.totalQuestions ?? 0;
   const totalAnswers = stats?.totalAnswers ?? 0;
@@ -405,39 +457,96 @@ export function EnhancedAdminPanel({ currentUser }) {
     ]
   );
 
+  const recentReports = useMemo(() => {
+    return reports.slice(0, 5).map((report) => {
+      const status = normalizeText(report?.status) || 'unknown';
+      const timestamp = report?.timestamp ?? report?.created_at;
+      const titleRaw =
+        report?.targetTitle ??
+        report?.target ??
+        `${formatCategoryLabel(normalizeText(report?.type) || 'content')} #${report?.target_id ?? ''}`;
+      const title = typeof titleRaw === 'string' ? titleRaw.trim() : String(titleRaw);
+      return {
+        id: report?.id ?? `${title}-${timestamp ?? status}`,
+        title: title || 'Untitled content',
+        status,
+        timestamp,
+      };
+    });
+  }, [reports]);
+
+  const complianceChecks = useMemo(() => {
+    const nowISO = new Date().toISOString();
+    const queueStatus = moderationStats.pending > 5 ? 'attention' : 'pass';
+    const answerRateStatus = answerRate >= 65 ? 'pass' : 'attention';
+    const highPriorityStatus = moderationStats.highPriority > 0 ? 'attention' : 'pass';
+
+    return [
+      {
+        id: 'check-queue',
+        label: 'Moderation queue load',
+        status: queueStatus,
+        updatedAt: nowISO,
+        detail: `${numberFormatter.format(moderationStats.pending)} pending`,
+      },
+      {
+        id: 'check-answers',
+        label: 'Community answer rate',
+        status: answerRateStatus,
+        updatedAt: nowISO,
+        detail: `${answerRate}% answered`,
+      },
+      {
+        id: 'check-priority',
+        label: 'High priority flags',
+        status: highPriorityStatus,
+        updatedAt: nowISO,
+        detail: `${numberFormatter.format(moderationStats.highPriority)} escalated`,
+      },
+    ];
+  }, [answerRate, moderationStats, numberFormatter]);
+
+  const automationSignals = useMemo(() => {
+    if (!auditLogs.length) {
+      return [];
+    }
+
+    const seen = new Set();
+    const entries = [];
+    auditLogs.forEach((log) => {
+      const action = log?.action;
+      if (!action || seen.has(action)) {
+        return;
+      }
+      seen.add(action);
+      entries.push({
+        id: log?.id ?? action,
+        label: formatActionLabel(action),
+        status: normalizeText(action).includes('dismiss') ? 'paused' : 'active',
+        timestamp: log?.timestamp,
+      });
+    });
+
+    return entries.slice(0, 4);
+  }, [auditLogs]);
+
   const filteredReports = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
     return reports.filter((report) => {
-      const search = searchTerm.trim().toLowerCase();
-      const matchesSearch =
-        !search ||
-        report.targetTitle.toLowerCase().includes(search) ||
-        report.reason.toLowerCase().includes(search) ||
-        (report.description ?? '').toLowerCase().includes(search);
-      const matchesStatus =
-        selectedReportStatus === 'all' || report.status === selectedReportStatus;
+      const haystack = [
+        report?.targetTitle,
+        report?.reason,
+        report?.description,
+        report?.reporterName,
+        report?.reporterEmail,
+        report?.type,
+      ].map(normalizeText);
+      const matchesSearch = !search || haystack.some((value) => value.includes(search));
+      const status = normalizeText(report?.status);
+      const matchesStatus = selectedReportStatus === 'all' || status === selectedReportStatus;
       return matchesSearch && matchesStatus;
     });
   }, [reports, searchTerm, selectedReportStatus]);
-
-  const communityLeaders = useMemo(() => {
-    if (!adminUsers.length) {
-      return fallbackLeaders;
-    }
-
-    return adminUsers.slice(0, 5).map((user, index) => {
-      const contributions =
-        user.contributions ??
-        user.answers_count ??
-        user.questions_count ??
-        0;
-      return {
-        id: user.id ?? `leader-${index}`,
-        name: user.name || user.email || `Member ${index + 1}`,
-        contributions,
-        reputation: user.reputation ?? 0,
-      };
-    });
-  }, [adminUsers]);
 
   const timeRangeLabel = TIME_RANGE_LABELS[selectedTimeRange] ?? 'Last 7 days';
   const flaggedUsers = useMemo(() => {
@@ -460,7 +569,48 @@ export function EnhancedAdminPanel({ currentUser }) {
     });
     return Array.from(grouped.values()).slice(0, 5);
   }, [reports]);
-  const teamMembers = defaultTeamMembers;
+
+  const teamMembers = useMemo(() => {
+    if (!Array.isArray(adminUsers) || !adminUsers.length) {
+      return [];
+    }
+    const now = Date.now();
+    return adminUsers.map((user) => {
+      const joinedAt = safeParseDate(user?.created_at);
+      const updatedAt = safeParseDate(user?.updated_at);
+      const isActive = updatedAt ? now - updatedAt.getTime() <= 12 * 60 * 60 * 1000 : false;
+      return {
+        id: user.id ?? user.email ?? `user-${Math.random().toString(36).slice(2)}`,
+        name: user.name || user.email || 'Team member',
+        roleLabel: formatCategoryLabel(normalizeText(user?.role) || 'member'),
+        email: user.email,
+        joinedAt,
+        lastActive: updatedAt,
+        status: isActive ? 'Active' : 'Away',
+      };
+    });
+  }, [adminUsers]);
+
+  const topReporters = useMemo(() => {
+    const counts = new Map();
+    reports.forEach((report) => {
+      const reporterId = report.reporterId ?? report.user_id ?? report.userId ?? report.userID;
+      const key = reporterId ?? report.reporterEmail ?? report.reporterName ?? report.user_id ?? report.id;
+      const name = report.reporterName || report.reporterEmail || (reporterId ? `User #${reporterId}` : 'Community member');
+      if (!counts.has(key)) {
+        counts.set(key, {
+          id: key,
+          name,
+          reports: 0,
+        });
+      }
+      const entry = counts.get(key);
+      entry.reports += 1;
+    });
+    return Array.from(counts.values())
+      .sort((a, b) => b.reports - a.reports)
+      .slice(0, 3);
+  }, [reports]);
 
   const navigation = [
     { label: 'Overview', value: 'overview', icon: Activity },
@@ -616,19 +766,28 @@ export function EnhancedAdminPanel({ currentUser }) {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                         <Download className="h-4 w-4 text-slate-500" />
-                        Saved exports
+                        Recent reports
                       </span>
                       <Badge className="bg-slate-900 text-white">
-                        {savedExports.length}
+                        {recentReports.length}
                       </Badge>
                     </div>
                     <div className="mt-3 space-y-2 text-xs text-slate-500">
-                      {savedExports.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between">
-                          <span>{item.name}</span>
-                          <span>{item.format}</span>
-                        </div>
-                      ))}
+                      {recentReports.length ? (
+                        recentReports.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between gap-2">
+                            <span className="truncate">{item.title}</span>
+                            <span className="text-right">
+                              {formatCategoryLabel(item.status)}
+                              <span className="ml-1 text-[11px] text-slate-400">
+                                {formatTimeAgo(item.timestamp) || '-'}
+                              </span>
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-slate-400">No reports yet</p>
+                      )}
                     </div>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -668,7 +827,7 @@ export function EnhancedAdminPanel({ currentUser }) {
                           <FileText className="h-4 w-4 text-slate-500" /> Reports archive
                         </span>
                         <Badge variant="outline" className="border-transparent bg-slate-200">
-                          {savedExports.length}
+                          {recentReports.length}
                         </Badge>
                       </button>
                     </div>
@@ -915,12 +1074,18 @@ export function EnhancedAdminPanel({ currentUser }) {
                         </Badge>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {trendingTags.map((item) => (
-                          <div key={item.tag} className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-700">#{item.tag}</span>
-                            <span className="text-xs font-semibold text-emerald-600">{item.delta}</span>
-                          </div>
-                        ))}
+                        {trendingTopics.length ? (
+                          trendingTopics.map((item) => (
+                            <div key={item.tag} className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-slate-700">#{item.tag}</span>
+                              <span className="text-xs font-semibold text-emerald-600">
+                                {numberFormatter.format(item.count)} questions
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-500">No topic insights available yet.</p>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -932,32 +1097,51 @@ export function EnhancedAdminPanel({ currentUser }) {
                         <p className="text-sm text-slate-500">Coverage across the moderation roster</p>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {teamMembers.map((member) => (
-                          <div key={member.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="size-9 bg-slate-100">
-                                <AvatarFallback className="text-sm font-medium text-slate-600">
-                                  {member.name
-                                    .split(' ')
-                                    .map((part) => part[0])
-                                    .join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900">{member.name}</p>
-                                <p className="text-xs text-slate-500">{member.role}</p>
+                        {teamMembers.length ? (
+                          teamMembers.map((member) => (
+                            <div key={member.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="size-9 bg-slate-100">
+                                  <AvatarFallback className="text-sm font-medium text-slate-600">
+                                    {member.name
+                                      .split(' ')
+                                      .map((part) => part?.[0])
+                                      .filter(Boolean)
+                                      .join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-900">{member.name}</p>
+                                  <p className="text-xs text-slate-500">{member.roleLabel}</p>
+                                  <p className="text-xs text-slate-400">{member.email}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <Badge className="mr-2 bg-emerald-500/10 text-emerald-600">
+                                  <UserCheck className="mr-1 h-3 w-3" />
+                                  {member.status}
+                                </Badge>
+                                <p className="text-xs text-slate-500">
+                                  Last active {formatTimeAgo(member.lastActive) || '—'}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-400">
+                                  Joined{' '}
+                                  {member.joinedAt
+                                    ? member.joinedAt.toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                      })
+                                    : '—'}
+                                </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <Badge className="mr-2 bg-emerald-500/10 text-emerald-600">
-                                <UserCheck className="mr-1 h-3 w-3" />
-                                {member.status}
-                              </Badge>
-                              <p className="text-xs text-slate-500">{member.shift}</p>
-                              <p className="mt-1 text-xs text-slate-400">Load {member.load}%</p>
-                            </div>
-                          </div>
-                        ))}
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-500">
+                            No admin teammates found yet.
+                          </p>
+                        )}
                       </CardContent>
                     </Card>
 
@@ -967,46 +1151,60 @@ export function EnhancedAdminPanel({ currentUser }) {
                         <p className="text-sm text-slate-500">Policy coverage and automation audits</p>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {complianceChecks.map((check) => (
-                          <div key={check.id} className="flex items-start justify-between rounded-lg border border-slate-200 p-3">
-                            <div>
-                              <p className="text-sm font-medium text-slate-800">{check.label}</p>
-                              <p className="text-xs text-slate-500">
-                                Updated {formatTimeAgo(check.updatedAt)}
-                              </p>
+                        {complianceChecks.length ? (
+                          complianceChecks.map((check) => (
+                            <div key={check.id} className="flex items-start justify-between rounded-lg border border-slate-200 p-3">
+                              <div>
+                                <p className="text-sm font-medium text-slate-800">{check.label}</p>
+                                <p className="text-xs text-slate-500">{check.detail}</p>
+                                <p className="text-xs text-slate-400">
+                                  Updated {formatTimeAgo(check.updatedAt) || 'recently'}
+                                </p>
+                              </div>
+                              {check.status === 'pass' ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-600">
+                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  On track
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-amber-500/10 text-amber-600">
+                                  <AlertTriangle className="mr-1 h-3 w-3" />
+                                  Attention
+                                </Badge>
+                              )}
                             </div>
-                            {check.status === 'pass' ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-600">
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                                On track
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-amber-500/10 text-amber-600">
-                                <AlertTriangle className="mr-1 h-3 w-3" />
-                                Attention
-                              </Badge>
-                            )}
-                          </div>
-                        ))}
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-500">No compliance signals yet.</p>
+                        )}
                       </CardContent>
                     </Card>
 
                     <Card className="border-0 bg-white shadow-sm">
                       <CardHeader className="pb-4">
-                        <CardTitle>Automation rules</CardTitle>
-                        <p className="text-sm text-slate-500">Quick glance at safeguards</p>
+                        <CardTitle>Moderation actions</CardTitle>
+                        <p className="text-sm text-slate-500">Latest admin interventions</p>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {automationRules.map((rule) => (
-                          <div key={rule.id} className="flex items-center justify-between">
-                            <p className="text-sm text-slate-600">{rule.label}</p>
-                            {rule.status === 'active' ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-600">Active</Badge>
-                            ) : (
-                              <Badge className="bg-slate-200 text-slate-600">Paused</Badge>
-                            )}
-                          </div>
-                        ))}
+                        {automationSignals.length ? (
+                          automationSignals.map((signal) => (
+                            <div key={signal.id} className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-slate-600">{signal.label}</p>
+                                <p className="text-xs text-slate-400">
+                                  {formatTimeAgo(signal.timestamp) || 'recently'}
+                                </p>
+                              </div>
+                              {signal.status === 'active' ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-600">Active</Badge>
+                              ) : (
+                                <Badge className="bg-slate-200 text-slate-600">Paused</Badge>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-500">No admin activity recorded yet.</p>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -1077,79 +1275,94 @@ export function EnhancedAdminPanel({ currentUser }) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredReports.map((report) => (
-                            <TableRow key={report.id}>
-                              <TableCell className="max-w-[220px]">
-                                <p className="truncate text-sm font-medium text-slate-900">
-                                  {report.targetTitle}
-                                </p>
-                                <p className="text-xs uppercase tracking-wide text-slate-400">
-                                  {report.type}
-                                </p>
-                              </TableCell>
-                              <TableCell className="text-sm text-slate-600">
-                                {report.reason}
-                              </TableCell>
-                              <TableCell className="text-sm text-slate-600">
-                                {report.reporterName}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={getPriorityBadgeClasses(report.priority)}
-                                >
-                                  {formatCategoryLabel(report.priority)}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={getStatusBadgeClasses(report.status)}
-                                >
-                                  {formatCategoryLabel(report.status)}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-slate-500">
-                                {formatDateTime(report.timestamp)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  {report.status === 'pending' ? (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-emerald-600 hover:text-emerald-700"
-                                        onClick={() => handleReportAction(report.id, 'resolve')}
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-slate-600 hover:text-slate-800"
-                                        onClick={() => handleReportAction(report.id, 'dismiss')}
-                                      >
-                                        <EyeOff className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-red-500 hover:text-red-600"
-                                        onClick={() => handleReportAction(report.id, 'remove')}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <Badge variant="outline" className="border-slate-200 bg-slate-100">
-                                      Reviewed
-                                    </Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {filteredReports.map((report) => {
+                            const status = normalizeText(report?.status) || 'unknown';
+                            const priority = normalizeText(report?.priority) || 'medium';
+                            const targetTitleRaw = report?.targetTitle ?? '';
+                            const targetTitle = String(targetTitleRaw).trim() || 'Untitled content';
+                            const reasonRaw = report?.reason ?? report?.description ?? '';
+                            const reason = String(reasonRaw).trim() || 'No reason provided';
+                            const reporterLabel =
+                              report?.reporterName || report?.reporterEmail || 'Community member';
+                            const timestamp = report?.timestamp ?? report?.created_at;
+                            const typeLabel = formatCategoryLabel(normalizeText(report?.type) || 'content');
+                            const reportId = report?.id;
+                            const rowKey = reportId ?? `${targetTitle}-${timestamp ?? 'pending'}`;
+
+                            return (
+                              <TableRow key={rowKey}>
+                                <TableCell className="max-w-[220px]">
+                                  <p className="truncate text-sm font-medium text-slate-900">
+                                    {targetTitle}
+                                  </p>
+                                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    {typeLabel}
+                                  </p>
+                                </TableCell>
+                                <TableCell className="text-sm text-slate-600">
+                                  {reason}
+                                </TableCell>
+                                <TableCell className="text-sm text-slate-600">
+                                  {reporterLabel}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={getPriorityBadgeClasses(priority)}
+                                  >
+                                    {formatCategoryLabel(priority)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={getStatusBadgeClasses(status)}
+                                  >
+                                    {formatCategoryLabel(status)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-sm text-slate-500">
+                                  {formatDateTime(timestamp)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    {status === 'pending' && reportId ? (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="text-emerald-600 hover:text-emerald-700"
+                                          onClick={() => handleReportAction(reportId, 'resolve')}
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="text-slate-600 hover:text-slate-800"
+                                          onClick={() => handleReportAction(reportId, 'dismiss')}
+                                        >
+                                          <EyeOff className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="text-red-500 hover:text-red-600"
+                                          onClick={() => handleReportAction(reportId, 'remove')}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <Badge variant="outline" className="border-slate-200 bg-slate-100">
+                                        {status === 'unknown' ? '—' : formatTimeAgo(timestamp)}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -1273,26 +1486,30 @@ export function EnhancedAdminPanel({ currentUser }) {
 
                     <Card className="border-0 bg-white shadow-sm">
                       <CardHeader className="pb-4">
-                        <CardTitle>Top contributors</CardTitle>
-                        <p className="text-sm text-slate-500">Most helpful voices this cycle</p>
+                        <CardTitle>Top reporters</CardTitle>
+                        <p className="text-sm text-slate-500">Community members flagging content the most</p>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {communityLeaders.map((leader, index) => (
-                          <div key={leader.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-semibold text-slate-400">#{index + 1}</span>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900">{leader.name}</p>
-                                <p className="text-xs text-slate-500">
-                                  {leader.contributions} contributions
-                                </p>
+                        {topReporters.length ? (
+                          topReporters.map((leader, index) => (
+                            <div key={leader.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-semibold text-slate-400">#{index + 1}</span>
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-900">{leader.name}</p>
+                                  <p className="text-xs text-slate-500">
+                                    {numberFormatter.format(leader.reports)} reports
+                                  </p>
+                                </div>
                               </div>
+                              <Badge className="bg-indigo-500/10 text-indigo-600">
+                                {numberFormatter.format(leader.reports)}
+                              </Badge>
                             </div>
-                            <Badge className="bg-indigo-500/10 text-indigo-600">
-                              {numberFormatter.format(leader.reputation)} rep
-                            </Badge>
-                          </div>
-                        ))}
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-500">No reports submitted yet.</p>
+                        )}
                       </CardContent>
                     </Card>
                   </div>

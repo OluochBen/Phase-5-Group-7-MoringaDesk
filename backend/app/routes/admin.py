@@ -9,6 +9,7 @@ from ..models.solution import Solution
 from ..models.faq import FAQ
 from ..models.report import Report
 from ..models.audit_log import AuditLog
+from ..services import AdminDashboardService
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -132,6 +133,15 @@ def get_stats():
         "resolvedReports": Report.query.filter_by(status="resolved").count(),
         "activeUsers": User.query.filter(User.role != "admin").count(),
     }), 200
+
+
+@admin_bp.route("/dashboard", methods=["GET"])
+@jwt_required()
+@admin_required
+def admin_dashboard():
+    current_user_id = get_jwt_identity()
+    data = AdminDashboardService.get_dashboard(current_user_id=current_user_id)
+    return jsonify(data), 200
 
 
 # ---- Reports ----

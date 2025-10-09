@@ -1,1653 +1,522 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Users,
-  MessageSquare,
-  Flag,
-  Activity,
-  TrendingUp,
-  Eye,
-  EyeOff,
-  Trash2,
-  CheckCircle,
-  Search,
-  Filter,
-  MoreHorizontal,
-  FileText,
-  AlertTriangle,
+  Award,
+  ChevronRight,
   Clock,
-  UserCheck,
-  UserX,
-  Edit,
+  Eye,
+  Loader2,
+  MessageSquare,
   Plus,
-  Download,
-  Calendar,
-} from 'lucide-react';
-import api, { problemsApi } from '../services/api';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+  Search,
+  Sparkles,
+  Tag,
+  ThumbsUp,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+
+import { adminApi } from "../services/api";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table';
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Input } from "./ui/input";
+import { Progress } from "./ui/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './ui/select';
-import { Input } from './ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './ui/dialog';
-import { Textarea } from './ui/textarea';
-import { Label } from './ui/label';
-import { Separator } from './ui/separator';
-import { Progress } from './ui/progress';
-import { Avatar, AvatarFallback } from './ui/avatar';
+} from "./ui/select";
+import { Separator } from "./ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
-const TIME_RANGE_LABELS = {
-  '1d': 'Last 24 hours',
-  '7d': 'Last 7 days',
-  '30d': 'Last 30 days',
-  '90d': 'Last 90 days',
-};
-
-function getStatusBadgeClasses(status) {
-  switch (status) {
-    case 'pending':
-      return 'border-amber-200 bg-amber-100 text-amber-700';
-    case 'resolved':
-      return 'border-emerald-200 bg-emerald-100 text-emerald-700';
-    case 'dismissed':
-      return 'border-slate-200 bg-slate-100 text-slate-600';
-    default:
-      return 'border-slate-200 bg-slate-100 text-slate-600';
-  }
+function formatShortNumber(value) {
+  const formatter = new Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+  return formatter.format(value || 0);
 }
 
-function getPriorityBadgeClasses(priority) {
-  switch (priority) {
-    case 'high':
-      return 'border-red-200 bg-red-100 text-red-600';
-    case 'medium':
-      return 'border-amber-200 bg-amber-100 text-amber-700';
-    case 'low':
-      return 'border-emerald-200 bg-emerald-100 text-emerald-700';
-    default:
-      return 'border-slate-200 bg-slate-100 text-slate-600';
-  }
+function formatPercent(value) {
+  if (value == null || Number.isNaN(value)) return "0%";
+  return `${Math.round(value)}%`;
 }
 
-function formatDateTime(value) {
+function formatDate(value) {
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
 function formatTimeAgo(value) {
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-  const diffMinutes = Math.round((Date.now() - date.getTime()) / 60000);
-  if (diffMinutes < 1) {
-    return 'just now';
-  }
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-  if (diffMinutes < 1440) {
-    return `${Math.floor(diffMinutes / 60)}h ago`;
-  }
-  return `${Math.floor(diffMinutes / 1440)}d ago`;
+  if (Number.isNaN(date.getTime())) return "—";
+  const diff = Date.now() - date.getTime();
+  const minutes = diff / 60000;
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${Math.floor(minutes)}m ago`;
+  const hours = minutes / 60;
+  if (hours < 24) return `${Math.floor(hours)}h ago`;
+  const days = hours / 24;
+  if (days < 7) return `${Math.floor(days)}d ago`;
+  const weeks = days / 7;
+  if (weeks < 4) return `${Math.floor(weeks)}w ago`;
+  const months = days / 30;
+  if (months < 12) return `${Math.floor(months)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
 }
 
-function formatCategoryLabel(value) {
-  if (!value) {
-    return 'General';
-  }
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function normalizeQuestion(question) {
+  const tags = Array.isArray(question?.tags) ? question.tags : [];
+  return {
+    id: question.id,
+    title: question.title ?? "(untitled)",
+    description: question.description ?? question.body ?? "",
+    created_at: question.created_at ?? question.timestamp,
+    updated_at: question.updated_at ?? question.timestamp,
+    tags,
+    problem_type: question.problem_type,
+    solutions_count: question.solutions_count ?? 0,
+    follows_count: question.follows_count ?? question.followers_count ?? 0,
+    view_count: question.view_count ?? question.views ?? 0,
+    vote_count: question.vote_total ?? question.vote_count ?? 0,
+    authorName: question.authorName ?? question.author?.name ?? "Unknown",
+    authorId: question.authorId ?? question.user_id,
+    is_solved: Boolean(question.is_solved) || (question.solutions_count ?? 0) > 0,
+    bounty: question.bounty ?? 0,
+    is_featured: Boolean(question.is_featured),
+    is_following: Boolean(question.is_following),
+  };
 }
 
-function safeParseDate(value) {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
+const METRIC_CARD_CONFIG = [
+  {
+    key: "total_questions",
+    label: "Total Questions",
+    icon: Users,
+    accent: "text-emerald-600 bg-emerald-100",
+  },
+  {
+    key: "answer_rate",
+    label: "Answer Rate",
+    icon: TrendingUp,
+    accent: "text-rose-600 bg-rose-100",
+    isPercent: true,
+    showProgress: true,
+  },
+  {
+    key: "total_views",
+    label: "Total Views",
+    icon: Eye,
+    accent: "text-indigo-600 bg-indigo-100",
+  },
+  {
+    key: "total_bounty",
+    label: "Total Bounty",
+    icon: Sparkles,
+    accent: "text-amber-600 bg-amber-100",
+  },
+];
 
-function formatDuration(minutes) {
-  if (!minutes || !Number.isFinite(minutes) || minutes <= 0) {
-    return '—';
-  }
-  const totalMinutes = Math.round(minutes);
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  if (hours && mins) {
-    return `${hours}h ${mins}m`;
-  }
-  if (hours) {
-    return `${hours}h`;
-  }
-  return `${mins}m`;
-}
-
-function formatActionLabel(value) {
-  if (!value) {
-    return '';
-  }
-  return value
-    .toString()
-    .replace(/[_-]+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function normalizeText(value) {
-  if (typeof value === 'string') {
-    return value.toLowerCase();
-  }
-  if (value === null || value === undefined) {
-    return '';
-  }
-  return String(value).toLowerCase();
-}
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "popular", label: "Most Popular" },
+  { value: "answers", label: "Most Answers" },
+  { value: "bounty", label: "Highest Bounty" },
+];
 
 export function EnhancedAdminPanel({ currentUser }) {
-  const [activeSection, setActiveSection] = useState('overview');
-  const [reports, setReports] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [faqs, setFaqs] = useState([]);
+  const navigate = useNavigate();
+  const [dashboard, setDashboard] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedReportStatus, setSelectedReportStatus] = useState('all');
-  const [showCreateFAQDialog, setShowCreateFAQDialog] = useState(false);
-  const [newFAQ, setNewFAQ] = useState({
-    question: '',
-    answer: '',
-    category: 'moderation',
-  });
-  const [trendingTopics, setTrendingTopics] = useState([]);
+  const [error, setError] = useState("");
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await adminApi.dashboard();
+      setDashboard(data);
+      const list = Array.isArray(data?.questions) ? data.questions : [];
+      setQuestions(list.map(normalizeQuestion));
+    } catch (err) {
+      console.error("Failed to load admin dashboard", err);
+      setError(err?.response?.data?.error || err.message || "Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let active = true;
+    loadDashboard();
+  }, []);
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError('');
+  const metrics = dashboard?.metrics ?? {};
+  const popularTags = dashboard?.popular_tags ?? [];
+  const topContributors = dashboard?.top_contributors ?? [];
+  const recentActivity = dashboard?.recent_activity ?? [];
 
-        const [statsData, reportsData, auditData, usersData, faqsData] = await Promise.all([
-          api.get('/admin/stats').then((res) => res.data),
-          api.get('/admin/reports').then((res) => res.data),
-          api.get('/admin/audit').then((res) => res.data),
-          api
-            .get('/admin/users', { params: { page: 1, per_page: 10 } })
-            .then((res) => res.data?.users ?? []),
-          api.get('/faqs').then((res) => res.data?.faqs ?? []),
-        ]);
-
-        if (!active) return;
-
-        setStats(statsData || null);
-        const reportsList = Array.isArray(reportsData)
-          ? reportsData
-          : reportsData?.reports ?? [];
-        setReports(reportsList);
-        setAuditLogs(Array.isArray(auditData) ? auditData : auditData?.logs ?? []);
-        setAdminUsers(Array.isArray(usersData) ? usersData : []);
-        setFaqs(Array.isArray(faqsData) ? faqsData : []);
-      } catch (err) {
-        if (!active) return;
-        console.error('Failed to load admin data', err);
-        setError(err.response?.data?.error || err.message || 'Failed to load admin data');
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
+  const counts = useMemo(() => {
+    const base = {
+      all: questions.length,
+      unanswered: questions.filter((q) => q.solutions_count === 0).length,
+      bounty: questions.filter((q) => (q.bounty || 0) > 0).length,
+      following: questions.filter((q) => q.follows_count > 0).length,
+      featured: questions.filter((q) => q.is_featured).length,
     };
-  }, []);
+    return base;
+  }, [questions]);
 
-  useEffect(() => {
-    let active = true;
+  const filteredQuestions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    let data = [...questions];
 
-    (async () => {
-      try {
-        const data = await problemsApi.list({ page: 1, per_page: 50 });
-        if (!active) {
-          return;
-        }
-
-        const source = Array.isArray(data?.questions)
-          ? data.questions
-          : Array.isArray(data?.items)
-          ? data.items
-          : [];
-
-        const tagCounts = new Map();
-        source.forEach((item) => {
-          const tagList = Array.isArray(item?.tags) ? item.tags : [];
-          tagList.forEach((tag) => {
-            const value =
-              typeof tag === 'string'
-                ? tag.trim().toLowerCase()
-                : typeof tag?.name === 'string'
-                ? tag.name.trim().toLowerCase()
-                : '';
-            if (!value) {
-              return;
-            }
-            tagCounts.set(value, (tagCounts.get(value) || 0) + 1);
-          });
-        });
-
-        const ranked = Array.from(tagCounts.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
-          .map(([tag, count]) => ({
-            tag,
-            count,
-          }));
-
-        setTrendingTopics(ranked);
-      } catch (err) {
-        if (active) {
-          console.error('Failed to load trending topics', err);
-          setTrendingTopics([]);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const reloadReports = useCallback(async () => {
-    const data = await api.get('/admin/reports').then((res) => res.data);
-    const list = Array.isArray(data) ? data : data?.reports ?? [];
-    setReports(list);
-    return list;
-  }, []);
-
-  const reloadAuditLogs = useCallback(async () => {
-    const data = await api.get('/admin/audit').then((res) => res.data);
-    const list = Array.isArray(data) ? data : data?.logs ?? [];
-    setAuditLogs(list);
-    return list;
-  }, []);
-
-  const reloadFaqs = useCallback(async () => {
-    const data = await api.get('/faqs').then((res) => res.data?.faqs ?? []);
-    const list = Array.isArray(data) ? data : [];
-    setFaqs(list);
-    return list;
-  }, []);
-
-  const numberFormatter = useMemo(() => new Intl.NumberFormat('en-US'), []);
-
-  const moderationStats = useMemo(() => {
-    const totalFromStats = (stats?.pendingReports ?? 0) + (stats?.resolvedReports ?? 0);
-    const totalReports = reports.length || totalFromStats;
-    const pending =
-      reports.filter((report) => normalizeText(report?.status) === 'pending').length ||
-      stats?.pendingReports ||
-      0;
-    const resolved =
-      reports.filter((report) => normalizeText(report?.status) === 'resolved').length ||
-      stats?.resolvedReports ||
-      0;
-    const dismissed = reports.filter((report) => normalizeText(report?.status) === 'dismissed').length;
-    const highPriority = reports.filter(
-      (report) =>
-        String(report.priority).toLowerCase() === 'high' && normalizeText(report?.status) === 'pending'
-    ).length;
-    const resolutionRate = totalReports ? Math.round((resolved / totalReports) * 100) : 0;
-
-    return {
-      totalReports,
-      pending,
-      resolved,
-      dismissed,
-      highPriority,
-      resolutionRate,
-      averageResponseTime: pending ? '—' : '—',
-    };
-  }, [reports, stats]);
-
-  const moderationInsights = useMemo(() => {
-    const now = Date.now();
-    const pendingList = reports.filter((report) => normalizeText(report?.status) === 'pending');
-    const pendingLast24 = pendingList.filter((report) => {
-      const date = safeParseDate(report?.timestamp ?? report?.created_at);
-      return date ? now - date.getTime() <= 24 * 60 * 60 * 1000 : false;
-    }).length;
-    const pendingAges = pendingList
-      .map((report) => {
-        const date = safeParseDate(report?.timestamp ?? report?.created_at);
-        return date ? (now - date.getTime()) / 60000 : null;
-      })
-      .filter((value) => value !== null);
-    const avgPendingMinutes = pendingAges.length
-      ? pendingAges.reduce((sum, value) => sum + value, 0) / pendingAges.length
-      : 0;
-    const resolvedLast7 = auditLogs.filter((log) => {
-      const action = normalizeText(log?.action);
-      if (!action || !action.includes('resolve')) {
-        return false;
-      }
-      const date = safeParseDate(log?.timestamp);
-      return date ? now - date.getTime() <= 7 * 24 * 60 * 60 * 1000 : false;
-    }).length;
-    const dismissedLast7 = auditLogs.filter((log) => {
-      const action = normalizeText(log?.action);
-      if (!action || !action.includes('dismiss')) {
-        return false;
-      }
-      const date = safeParseDate(log?.timestamp);
-      return date ? now - date.getTime() <= 7 * 24 * 60 * 60 * 1000 : false;
-    }).length;
-
-    return [
-      {
-        id: 'mi-queue',
-        title: 'Pending queue',
-        value: numberFormatter.format(moderationStats.pending),
-        change: `${numberFormatter.format(pendingLast24)} new today`,
-        tone: moderationStats.pending > 0 ? 'attention' : 'positive',
-      },
-      {
-        id: 'mi-resolution',
-        title: 'Resolution rate',
-        value: `${moderationStats.resolutionRate}%`,
-        change: `${numberFormatter.format(resolvedLast7)} resolved past 7d`,
-        tone: moderationStats.resolutionRate >= 80 ? 'positive' : 'attention',
-      },
-      {
-        id: 'mi-age',
-        title: 'Average pending age',
-        value: formatDuration(avgPendingMinutes),
-        change: dismissedLast7
-          ? `${numberFormatter.format(dismissedLast7)} dismissed past 7d`
-          : 'Monitoring queue',
-        tone: avgPendingMinutes > 240 ? 'attention' : 'positive',
-      },
-    ];
-  }, [auditLogs, moderationStats, numberFormatter, reports]);
-
-  const totalQuestions = stats?.totalQuestions ?? 0;
-  const totalAnswers = stats?.totalAnswers ?? 0;
-  const totalUsersCount = stats?.totalUsers ?? adminUsers.length;
-  const answerRate = totalQuestions ? Math.round((totalAnswers / totalQuestions) * 100) : 0;
-  const unansweredQuestions = Math.max(totalQuestions - totalAnswers, 0);
-
-  const activeContributors = stats?.activeUsers ?? totalUsersCount;
-
-  const statsCards = useMemo(
-    () => [
-      {
-        id: 'stat-1',
-        icon: Users,
-        label: 'Active contributors',
-        value: numberFormatter.format(activeContributors),
-        change: 'Active this month',
-        accentClass: 'bg-emerald-500/10 text-emerald-500',
-      },
-      {
-        id: 'stat-2',
-        icon: MessageSquare,
-        label: 'New questions',
-        value: numberFormatter.format(totalQuestions),
-        change: `${answerRate}% answered`,
-        accentClass: 'bg-sky-500/10 text-sky-600',
-      },
-      {
-        id: 'stat-3',
-        icon: Flag,
-        label: 'Pending reports',
-        value: numberFormatter.format(moderationStats.pending),
-        change: `${numberFormatter.format(moderationStats.highPriority)} priority`,
-        accentClass: 'bg-amber-500/10 text-amber-600',
-      },
-      {
-        id: 'stat-4',
-        icon: TrendingUp,
-        label: 'Resolution rate',
-        value: `${moderationStats.resolutionRate}%`,
-        change: 'Target ≥ 90%',
-        accentClass: 'bg-indigo-500/10 text-indigo-600',
-      },
-    ],
-    [
-      answerRate,
-      moderationStats.highPriority,
-      moderationStats.pending,
-      moderationStats.resolutionRate,
-      numberFormatter,
-      totalQuestions,
-      activeContributors,
-    ]
-  );
-
-  const recentReports = useMemo(() => {
-    return reports.slice(0, 5).map((report) => {
-      const status = normalizeText(report?.status) || 'unknown';
-      const timestamp = report?.timestamp ?? report?.created_at;
-      const titleRaw =
-        report?.targetTitle ??
-        report?.target ??
-        `${formatCategoryLabel(normalizeText(report?.type) || 'content')} #${report?.target_id ?? ''}`;
-      const title = typeof titleRaw === 'string' ? titleRaw.trim() : String(titleRaw);
-      return {
-        id: report?.id ?? `${title}-${timestamp ?? status}`,
-        title: title || 'Untitled content',
-        status,
-        timestamp,
-      };
-    });
-  }, [reports]);
-
-  const complianceChecks = useMemo(() => {
-    const nowISO = new Date().toISOString();
-    const queueStatus = moderationStats.pending > 5 ? 'attention' : 'pass';
-    const answerRateStatus = answerRate >= 65 ? 'pass' : 'attention';
-    const highPriorityStatus = moderationStats.highPriority > 0 ? 'attention' : 'pass';
-
-    return [
-      {
-        id: 'check-queue',
-        label: 'Moderation queue load',
-        status: queueStatus,
-        updatedAt: nowISO,
-        detail: `${numberFormatter.format(moderationStats.pending)} pending`,
-      },
-      {
-        id: 'check-answers',
-        label: 'Community answer rate',
-        status: answerRateStatus,
-        updatedAt: nowISO,
-        detail: `${answerRate}% answered`,
-      },
-      {
-        id: 'check-priority',
-        label: 'High priority flags',
-        status: highPriorityStatus,
-        updatedAt: nowISO,
-        detail: `${numberFormatter.format(moderationStats.highPriority)} escalated`,
-      },
-    ];
-  }, [answerRate, moderationStats, numberFormatter]);
-
-  const automationSignals = useMemo(() => {
-    if (!auditLogs.length) {
-      return [];
-    }
-
-    const seen = new Set();
-    const entries = [];
-    auditLogs.forEach((log) => {
-      const action = log?.action;
-      if (!action || seen.has(action)) {
-        return;
-      }
-      seen.add(action);
-      entries.push({
-        id: log?.id ?? action,
-        label: formatActionLabel(action),
-        status: normalizeText(action).includes('dismiss') ? 'paused' : 'active',
-        timestamp: log?.timestamp,
+    if (term) {
+      data = data.filter((q) => {
+        const haystack = [
+          q.title,
+          q.description,
+          ...(Array.isArray(q.tags) ? q.tags : []),
+          q.authorName,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(term);
       });
-    });
+    }
 
-    return entries.slice(0, 4);
-  }, [auditLogs]);
+    if (activeTab === "unanswered") {
+      data = data.filter((q) => q.solutions_count === 0);
+    } else if (activeTab === "bounty") {
+      data = data.filter((q) => (q.bounty || 0) > 0);
+    } else if (activeTab === "following") {
+      data = data.filter((q) => q.follows_count > 0);
+    } else if (activeTab === "featured") {
+      data = data.filter((q) => q.is_featured);
+    }
 
-  const filteredReports = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-    return reports.filter((report) => {
-      const haystack = [
-        report?.targetTitle,
-        report?.reason,
-        report?.description,
-        report?.reporterName,
-        report?.reporterEmail,
-        report?.type,
-      ].map(normalizeText);
-      const matchesSearch = !search || haystack.some((value) => value.includes(search));
-      const status = normalizeText(report?.status);
-      const matchesStatus = selectedReportStatus === 'all' || status === selectedReportStatus;
-      return matchesSearch && matchesStatus;
-    });
-  }, [reports, searchTerm, selectedReportStatus]);
-
-  const timeRangeLabel = TIME_RANGE_LABELS[selectedTimeRange] ?? 'Last 7 days';
-  const flaggedUsers = useMemo(() => {
-    const grouped = new Map();
-    reports.forEach((report) => {
-      const displayName = report.targetTitle || `${report.type ?? report.target_type} #${report.target_id}`;
-      if (!grouped.has(displayName)) {
-        grouped.set(displayName, {
-          id: displayName,
-          name: displayName,
-          reason: report.reason,
-          reports: 0,
-          lastSeen: report.timestamp || report.created_at,
-        });
+    data.sort((a, b) => {
+      if (sortBy === "popular") {
+        const scoreA = (a.view_count || 0) + (a.vote_count || 0) * 2;
+        const scoreB = (b.view_count || 0) + (b.vote_count || 0) * 2;
+        return scoreB - scoreA;
       }
-      const entry = grouped.get(displayName);
-      entry.reports += 1;
-      entry.reason = report.reason;
-      entry.lastSeen = report.timestamp || report.created_at || entry.lastSeen;
-    });
-    return Array.from(grouped.values()).slice(0, 5);
-  }, [reports]);
-
-  const teamMembers = useMemo(() => {
-    if (!Array.isArray(adminUsers) || !adminUsers.length) {
-      return [];
-    }
-    const now = Date.now();
-    return adminUsers.map((user) => {
-      const joinedAt = safeParseDate(user?.created_at);
-      const updatedAt = safeParseDate(user?.updated_at);
-      const isActive = updatedAt ? now - updatedAt.getTime() <= 12 * 60 * 60 * 1000 : false;
-      return {
-        id: user.id ?? user.email ?? `user-${Math.random().toString(36).slice(2)}`,
-        name: user.name || user.email || 'Team member',
-        roleLabel: formatCategoryLabel(normalizeText(user?.role) || 'member'),
-        email: user.email,
-        joinedAt,
-        lastActive: updatedAt,
-        status: isActive ? 'Active' : 'Away',
-      };
-    });
-  }, [adminUsers]);
-
-  const topReporters = useMemo(() => {
-    const counts = new Map();
-    reports.forEach((report) => {
-      const reporterId = report.reporterId ?? report.user_id ?? report.userId ?? report.userID;
-      const key = reporterId ?? report.reporterEmail ?? report.reporterName ?? report.user_id ?? report.id;
-      const name = report.reporterName || report.reporterEmail || (reporterId ? `User #${reporterId}` : 'Community member');
-      if (!counts.has(key)) {
-        counts.set(key, {
-          id: key,
-          name,
-          reports: 0,
-        });
+      if (sortBy === "answers") {
+        return (b.solutions_count || 0) - (a.solutions_count || 0);
       }
-      const entry = counts.get(key);
-      entry.reports += 1;
+      if (sortBy === "bounty") {
+        return (b.bounty || 0) - (a.bounty || 0);
+      }
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
+      return dateB - dateA;
     });
-    return Array.from(counts.values())
-      .sort((a, b) => b.reports - a.reports)
-      .slice(0, 3);
-  }, [reports]);
 
-  const navigation = [
-    { label: 'Overview', value: 'overview', icon: Activity },
-    { label: 'Moderation Hub', value: 'moderation', icon: Flag },
-    { label: 'Community', value: 'users', icon: Users },
-  ];
-
-  const handleReportAction = async (reportId, action) => {
-    try {
-      const endpoint =
-        action === 'resolve' ? 'resolve' : action === 'dismiss' || action === 'remove' ? 'dismiss' : null;
-      if (!endpoint) return;
-
-      await api.post(`/admin/reports/${reportId}/${endpoint}`);
-      await Promise.all([reloadReports(), reloadAuditLogs()]);
-    } catch (err) {
-      console.error('Failed to update report', err);
-    }
-  };
-
-  const handleUserAction = (userId, action) => {
-    console.log(`Admin action: ${action} applied to user ${userId}`);
-  };
-
-  const handleCreateFAQ = async (event) => {
-    event.preventDefault();
-    if (!newFAQ.question.trim() || !newFAQ.answer.trim()) {
-      return;
-    }
-
-    try {
-      await api.post('/faqs', {
-        question: newFAQ.question.trim(),
-        answer: newFAQ.answer.trim(),
-      });
-      await reloadFaqs();
-      setNewFAQ({ question: '', answer: '', category: newFAQ.category });
-      setShowCreateFAQDialog(false);
-    } catch (err) {
-      console.error('Failed to create FAQ', err);
-    }
-  };
-
-  const greeting = currentUser?.name
-    ? `Welcome back, ${currentUser.name}`
-    : 'Welcome back, Admin';
+    return data;
+  }, [questions, searchTerm, activeTab, sortBy]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 py-12">
-        <div className="mx-auto max-w-3xl text-center text-slate-600">
-          Loading admin data…
-        </div>
+      <div className="flex min-h-[60vh] items-center justify-center text-slate-500">
+        <Loader2 className="mr-2 size-5 animate-spin" />
+        Loading admin dashboard…
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-100 py-12">
-        <div className="mx-auto max-w-3xl">
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-8 text-center text-red-600">
-              {error}
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-center">
+        <h2 className="text-lg font-semibold text-red-600">Unable to load dashboard</h2>
+        <p className="text-sm text-slate-600">{error}</p>
+        <Button onClick={loadDashboard}>Try again</Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8">
-      <div className="mx-auto max-w-[1400px] px-4 lg:px-8">
-        <div className="grid gap-8 xl:grid-cols-[280px_1fr]">
-          <aside className="hidden xl:block">
-            <Card className="sticky top-8 h-fit border-0 bg-white/80 shadow-xl backdrop-blur">
-              <CardHeader className="space-y-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Control Center
-                    </p>
-                    <p className="text-lg font-semibold text-slate-900">Gem Admin</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-slate-500 hover:text-slate-900"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button className="w-full bg-slate-900 text-white hover:bg-slate-800" size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New announcement
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Navigation
-                  </p>
-                  <div className="mt-3 space-y-1">
-                    {navigation.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeSection === item.value;
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => setActiveSection(item.value)}
-                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition ${
-                            isActive
-                              ? 'bg-slate-900 text-white shadow-lg'
-                              : 'text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          <span className="flex items-center gap-3">
-                            <Icon className="h-4 w-4" />
-                            {item.label}
-                          </span>
-                          {isActive ? (
-                            <span className="text-xs font-semibold uppercase tracking-wide">
-                              Live
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <Separator />
-                <div className="space-y-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
-                        Open escalations
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="border-amber-200 bg-amber-100 text-amber-700"
-                      >
-                        {moderationStats.highPriority}
-                      </Badge>
-                    </div>
-                    <p className="mt-3 text-xs text-slate-500">
-                      High priority items waiting for lead review.
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                        <Download className="h-4 w-4 text-slate-500" />
-                        Recent reports
-                      </span>
-                      <Badge className="bg-slate-900 text-white">
-                        {recentReports.length}
-                      </Badge>
-                    </div>
-                    <div className="mt-3 space-y-2 text-xs text-slate-500">
-                      {recentReports.length ? (
-                        recentReports.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between gap-2">
-                            <span className="truncate">{item.title}</span>
-                            <span className="text-right">
-                              {formatCategoryLabel(item.status)}
-                              <span className="ml-1 text-[11px] text-slate-400">
-                                {formatTimeAgo(item.timestamp) || '-'}
-                              </span>
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-slate-400">No reports yet</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Shortcuts
-                    </p>
-                    <div className="mt-3 space-y-2 text-sm text-slate-600">
-                      <button
-                        type="button"
-                        onClick={() => setActiveSection('moderation')}
-                        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 hover:bg-slate-100"
-                      >
-                        <span className="flex items-center gap-2">
-                          <Flag className="h-4 w-4 text-amber-500" /> Moderation queue
-                        </span>
-                        <Badge variant="outline" className="border-transparent bg-slate-200">
-                          {moderationStats.pending}
-                        </Badge>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveSection('users')}
-                        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 hover:bg-slate-100"
-                      >
-                        <span className="flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4 text-slate-500" /> Community health
-                        </span>
-                        <Badge variant="outline" className="border-transparent bg-slate-200">
-                          {`${answerRate}%`}
-                        </Badge>
-                      </button>
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 hover:bg-slate-100"
-                      >
-                        <span className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-slate-500" /> Reports archive
-                        </span>
-                        <Badge variant="outline" className="border-transparent bg-slate-200">
-                          {recentReports.length}
-                        </Badge>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </aside>
-
-          <div className="space-y-6">
-            <Card className="border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-xl">
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex flex-col gap-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/60">
-                        Admin Control
-                      </p>
-                      <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">{greeting}</h1>
-                      <p className="mt-3 max-w-2xl text-sm text-white/70">
-                        Monitor community health, triage urgent reports, and coordinate the moderation team from a single view.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="bg-white/10 text-white hover:bg-white/20"
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {timeRangeLabel}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-white text-slate-900 hover:bg-slate-100"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Export snapshot
-                      </Button>
-                      <Button size="sm" className="bg-emerald-500 text-white hover:bg-emerald-400">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create automation
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-xl border border-white/10 bg-white/10 p-4">
-                      <p className="text-xs uppercase tracking-wide text-white/70">Pending queue</p>
-                      <p className="mt-2 text-2xl font-semibold">
-                        {numberFormatter.format(moderationStats.pending)}
-                      </p>
-                      <p className="mt-1 text-xs text-white/60">
-                        {moderationStats.highPriority} high priority items
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/10 p-4">
-                      <p className="text-xs uppercase tracking-wide text-white/70">Resolution pace</p>
-                      <p className="mt-2 text-2xl font-semibold">
-                        {moderationStats.resolutionRate}%
-                      </p>
-                      <p className="mt-1 text-xs text-white/60">
-                        Target ≥ 90%
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/10 p-4">
-                      <p className="text-xs uppercase tracking-wide text-white/70">Response time</p>
-                      <p className="mt-2 text-2xl font-semibold">
-                        {moderationStats.averageResponseTime}
-                      </p>
-                      <p className="mt-1 text-xs text-white/60">
-                        From first flag to human review
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {statsCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <Card key={card.id} className="border-0 bg-white shadow-sm">
-                    <CardContent className="flex items-start justify-between p-5">
-                      <div>
-                        <p className="text-xs font-semibold uppercase text-slate-500">
-                          {card.label}
-                        </p>
-                        <p className="mt-3 text-2xl font-semibold text-slate-900">
-                          {card.value}
-                        </p>
-                        <p className="mt-2 text-xs text-slate-500">{card.change}</p>
-                      </div>
-                      <span
-                        className={`flex size-10 items-center justify-center rounded-full ${card.accentClass}`}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </span>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <TabsList className="grid w-full grid-cols-3 bg-slate-200/60 lg:w-auto">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="moderation">Moderation</TabsTrigger>
-                  <TabsTrigger value="users">Community</TabsTrigger>
-                </TabsList>
-                <div className="flex items-center gap-2">
-                  <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Time range" />
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                      <SelectItem value="1d">Last 24 hours</SelectItem>
-                      <SelectItem value="7d">Last 7 days</SelectItem>
-                      <SelectItem value="30d">Last 30 days</SelectItem>
-                      <SelectItem value="90d">Last 90 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="icon">
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </div>
+    <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="space-y-6">
+        <section className="rounded-3xl border bg-gradient-to-br from-emerald-50 via-white to-emerald-50/60 p-8 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
+                <Sparkles className="size-4" />
+                Admin Dashboard
               </div>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+                Welcome back, {currentUser?.name ?? "Administrator"}! 👋
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                Discover answers, monitor community health, and keep the platform thriving with
+                real-time insights.
+              </p>
+            </div>
+            <Button size="lg" onClick={() => navigate("/ask")} className="self-start">
+              <Plus className="mr-2 size-4" />
+              Ask Question
+            </Button>
+          </div>
+        </section>
 
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-                  <div className="space-y-6">
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="flex flex-row items-center justify-between pb-4">
-                        <CardTitle>Moderation snapshot</CardTitle>
-                        <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-600">
-                          {timeRangeLabel}
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm text-slate-500">Items awaiting review</p>
-                            <p className="text-2xl font-semibold text-slate-900">
-                              {numberFormatter.format(moderationStats.pending)}
-                            </p>
-                          </div>
-                          <Badge className="bg-amber-500/15 text-amber-600">
-                            {moderationStats.highPriority} high priority
-                          </Badge>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <div className="flex items-center justify-between text-sm">
-                              <p className="text-slate-600">Resolution rate</p>
-                              <p className="font-medium text-slate-900">
-                                {moderationStats.resolutionRate}%
-                              </p>
-                            </div>
-                            <Progress value={moderationStats.resolutionRate} className="mt-2 h-2" />
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between text-sm">
-                              <p className="text-slate-600">Pending workload</p>
-                              <p className="font-medium text-slate-900">
-                                {moderationStats.totalReports
-                                  ? `${Math.round((moderationStats.pending / moderationStats.totalReports) * 100)}%`
-                                  : '0%'}
-                              </p>
-                            </div>
-                            <Progress
-                              value={
-                                moderationStats.totalReports
-                                  ? (moderationStats.pending / moderationStats.totalReports) * 100
-                                  : 0
-                              }
-                              className="mt-2 h-2"
-                            />
-                          </div>
-                        </div>
-                        <Separator />
-                        <div className="grid gap-4 sm:grid-cols-3">
-                          <div className="rounded-lg border border-slate-200 p-3">
-                            <p className="text-xs uppercase text-slate-500">Resolved</p>
-                            <p className="mt-2 text-lg font-semibold text-slate-900">
-                              {numberFormatter.format(moderationStats.resolved)}
-                            </p>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 p-3">
-                            <p className="text-xs uppercase text-slate-500">Dismissed</p>
-                            <p className="mt-2 text-lg font-semibold text-slate-900">
-                              {numberFormatter.format(moderationStats.dismissed)}
-                            </p>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 p-3">
-                            <p className="text-xs uppercase text-slate-500">Avg response</p>
-                            <div className="mt-2 flex items-center gap-2 text-lg font-semibold text-slate-900">
-                              <Clock className="h-4 w-4 text-slate-500" />
-                              {moderationStats.averageResponseTime}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="flex flex-row items-center justify-between pb-4">
-                        <CardTitle>Admin activity</CardTitle>
-                        <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-600">
-                          Live feed
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {auditLogs.map((activity) => (
-                          <div key={activity.id} className="rounded-lg border border-slate-200 p-3">
-                            <div className="flex items-baseline justify-between gap-4">
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {activity.admin_name || 'Admin'}
-                                </p>
-                                <p className="text-xs uppercase tracking-wide text-slate-500">
-                                  {activity.action}
-                                </p>
-                              </div>
-                              <span className="text-xs text-slate-400">
-                                {formatTimeAgo(activity.timestamp)}
-                              </span>
-                            </div>
-                            <p className="mt-2 text-sm text-slate-600">
-                              {activity.reason || activity.target}
-                            </p>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="flex flex-row items-center justify-between pb-4">
-                        <CardTitle>Trending topics</CardTitle>
-                        <Badge className="bg-indigo-500/10 text-indigo-600">
-                          <TrendingUp className="mr-1 h-3 w-3" />
-                          Momentum
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {trendingTopics.length ? (
-                          trendingTopics.map((item) => (
-                            <div key={item.tag} className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-slate-700">#{item.tag}</span>
-                              <span className="text-xs font-semibold text-emerald-600">
-                                {numberFormatter.format(item.count)} questions
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500">No topic insights available yet.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="space-y-6">
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="pb-4">
-                        <CardTitle>Team availability</CardTitle>
-                        <p className="text-sm text-slate-500">Coverage across the moderation roster</p>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {teamMembers.length ? (
-                          teamMembers.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="size-9 bg-slate-100">
-                                  <AvatarFallback className="text-sm font-medium text-slate-600">
-                                    {member.name
-                                      .split(' ')
-                                      .map((part) => part?.[0])
-                                      .filter(Boolean)
-                                      .join('')}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900">{member.name}</p>
-                                  <p className="text-xs text-slate-500">{member.roleLabel}</p>
-                                  <p className="text-xs text-slate-400">{member.email}</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <Badge className="mr-2 bg-emerald-500/10 text-emerald-600">
-                                  <UserCheck className="mr-1 h-3 w-3" />
-                                  {member.status}
-                                </Badge>
-                                <p className="text-xs text-slate-500">
-                                  Last active {formatTimeAgo(member.lastActive) || '—'}
-                                </p>
-                                <p className="mt-1 text-xs text-slate-400">
-                                  Joined{' '}
-                                  {member.joinedAt
-                                    ? member.joinedAt.toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric',
-                                      })
-                                    : '—'}
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500">
-                            No admin teammates found yet.
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="pb-4">
-                        <CardTitle>Compliance checks</CardTitle>
-                        <p className="text-sm text-slate-500">Policy coverage and automation audits</p>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {complianceChecks.length ? (
-                          complianceChecks.map((check) => (
-                            <div key={check.id} className="flex items-start justify-between rounded-lg border border-slate-200 p-3">
-                              <div>
-                                <p className="text-sm font-medium text-slate-800">{check.label}</p>
-                                <p className="text-xs text-slate-500">{check.detail}</p>
-                                <p className="text-xs text-slate-400">
-                                  Updated {formatTimeAgo(check.updatedAt) || 'recently'}
-                                </p>
-                              </div>
-                              {check.status === 'pass' ? (
-                                <Badge className="bg-emerald-500/10 text-emerald-600">
-                                  <CheckCircle className="mr-1 h-3 w-3" />
-                                  On track
-                                </Badge>
-                              ) : (
-                                <Badge className="bg-amber-500/10 text-amber-600">
-                                  <AlertTriangle className="mr-1 h-3 w-3" />
-                                  Attention
-                                </Badge>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500">No compliance signals yet.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="pb-4">
-                        <CardTitle>Moderation actions</CardTitle>
-                        <p className="text-sm text-slate-500">Latest admin interventions</p>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {automationSignals.length ? (
-                          automationSignals.map((signal) => (
-                            <div key={signal.id} className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-slate-600">{signal.label}</p>
-                                <p className="text-xs text-slate-400">
-                                  {formatTimeAgo(signal.timestamp) || 'recently'}
-                                </p>
-                              </div>
-                              {signal.status === 'active' ? (
-                                <Badge className="bg-emerald-500/10 text-emerald-600">Active</Badge>
-                              ) : (
-                                <Badge className="bg-slate-200 text-slate-600">Paused</Badge>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500">No admin activity recorded yet.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="moderation" className="space-y-6">
-                <Card className="border-0 bg-white shadow-sm">
-                  <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {METRIC_CARD_CONFIG.map((config) => {
+            const rawValue = metrics[config.key] ?? 0;
+            const displayValue = config.isPercent
+              ? formatPercent(rawValue)
+              : formatShortNumber(rawValue);
+            return (
+              <Card key={config.key} className="border-none shadow-sm ring-1 ring-slate-100">
+                <CardContent className="flex flex-col gap-4 pt-6">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`inline-flex items-center justify-center rounded-full p-2 ${config.accent}`}
+                    >
+                      <config.icon className="size-4" />
+                    </span>
                     <div>
-                      <CardTitle>Moderation queue</CardTitle>
-                      <p className="text-sm text-slate-500">Prioritise reports with the most impact</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        {config.label}
+                      </p>
+                      <p className="text-3xl font-semibold text-slate-900">{displayValue}</p>
                     </div>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
-                        <div className="relative flex-1">
-                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                          <Input
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Search reports by keyword, reason, or content"
-                            className="pl-9"
-                          />
-                        </div>
-                        <Select value={selectedReportStatus} onValueChange={setSelectedReportStatus}>
-                          <SelectTrigger className="w-full md:w-[160px]">
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All statuses</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                            <SelectItem value="dismissed">Dismissed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon">
-                          <Filter className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="bg-emerald-500 text-white hover:bg-emerald-400"
-                          onClick={() => console.log('Bulk resolve action triggered')}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Bulk resolve
-                        </Button>
-                      </div>
+                  </div>
+                  {config.showProgress && (
+                    <div className="space-y-1">
+                      <Progress value={Math.min(100, rawValue || 0)} />
+                      <p className="text-xs text-slate-500">
+                        {formatShortNumber(metrics.answered_questions ?? 0)} answered ·{" "}
+                        {formatShortNumber(metrics.unanswered_questions ?? 0)} open
+                      </p>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </section>
 
-                    <div className="rounded-xl border border-slate-200">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50">
-                            <TableHead>Content</TableHead>
-                            <TableHead>Reason</TableHead>
-                            <TableHead>Reporter</TableHead>
-                            <TableHead>Priority</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Timestamp</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredReports.map((report) => {
-                            const status = normalizeText(report?.status) || 'unknown';
-                            const priority = normalizeText(report?.priority) || 'medium';
-                            const targetTitleRaw = report?.targetTitle ?? '';
-                            const targetTitle = String(targetTitleRaw).trim() || 'Untitled content';
-                            const reasonRaw = report?.reason ?? report?.description ?? '';
-                            const reason = String(reasonRaw).trim() || 'No reason provided';
-                            const reporterLabel =
-                              report?.reporterName || report?.reporterEmail || 'Community member';
-                            const timestamp = report?.timestamp ?? report?.created_at;
-                            const typeLabel = formatCategoryLabel(normalizeText(report?.type) || 'content');
-                            const reportId = report?.id;
-                            const rowKey = reportId ?? `${targetTitle}-${timestamp ?? 'pending'}`;
-
-                            return (
-                              <TableRow key={rowKey}>
-                                <TableCell className="max-w-[220px]">
-                                  <p className="truncate text-sm font-medium text-slate-900">
-                                    {targetTitle}
-                                  </p>
-                                  <p className="text-xs uppercase tracking-wide text-slate-400">
-                                    {typeLabel}
-                                  </p>
-                                </TableCell>
-                                <TableCell className="text-sm text-slate-600">
-                                  {reason}
-                                </TableCell>
-                                <TableCell className="text-sm text-slate-600">
-                                  {reporterLabel}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant="outline"
-                                    className={getPriorityBadgeClasses(priority)}
-                                  >
-                                    {formatCategoryLabel(priority)}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant="outline"
-                                    className={getStatusBadgeClasses(status)}
-                                  >
-                                    {formatCategoryLabel(status)}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-sm text-slate-500">
-                                  {formatDateTime(timestamp)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    {status === 'pending' && reportId ? (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="text-emerald-600 hover:text-emerald-700"
-                                          onClick={() => handleReportAction(reportId, 'resolve')}
-                                        >
-                                          <CheckCircle className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="text-slate-600 hover:text-slate-800"
-                                          onClick={() => handleReportAction(reportId, 'dismiss')}
-                                        >
-                                          <EyeOff className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="text-red-500 hover:text-red-600"
-                                          onClick={() => handleReportAction(reportId, 'remove')}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </>
-                                    ) : (
-                                      <Badge variant="outline" className="border-slate-200 bg-slate-100">
-                                        {status === 'unknown' ? '—' : formatTimeAgo(timestamp)}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+        <section className="rounded-2xl border bg-white shadow-sm">
+          <CardHeader className="gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-slate-400" />
+                <Input
+                  placeholder="Search questions, tags, or users…"
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
+              </div>
+              <div className="flex w-full flex-col items-start gap-3 text-sm text-slate-500 lg:w-auto lg:flex-row lg:items-center">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full overflow-x-auto"
+            >
+              <TabsList className="inline-flex h-auto flex-wrap items-center gap-2 rounded-full bg-slate-100/60 p-2">
+                <TabsTrigger value="all" className="rounded-full px-4 py-1 text-sm">
+                  All ({counts.all})
+                </TabsTrigger>
+                <TabsTrigger value="unanswered" className="rounded-full px-4 py-1 text-sm">
+                  Unanswered ({counts.unanswered})
+                </TabsTrigger>
+                <TabsTrigger value="bounty" className="rounded-full px-4 py-1 text-sm">
+                  Bounty ({counts.bounty})
+                </TabsTrigger>
+                <TabsTrigger value="following" className="rounded-full px-4 py-1 text-sm">
+                  Following ({counts.following})
+                </TabsTrigger>
+                <TabsTrigger value="featured" className="rounded-full px-4 py-1 text-sm">
+                  Featured ({counts.featured})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <Separator />
+          <CardContent className="space-y-4 pt-6">
+            {filteredQuestions.length === 0 ? (
+              <Card className="border border-dashed bg-slate-50 py-12 text-center text-sm text-slate-500">
+                <CardContent>No questions match the current filters.</CardContent>
+              </Card>
+            ) : (
+              filteredQuestions.map((question) => (
+                <Card key={question.id} className="border border-slate-200 shadow-sm">
+                  <CardContent className="flex flex-col gap-4 pt-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {question.is_solved && (
+                        <Badge className="bg-emerald-100 text-emerald-700">Solved</Badge>
+                      )}
+                      {(question.bounty || 0) > 0 && (
+                        <Badge className="bg-amber-100 text-amber-700">
+                          {formatShortNumber(question.bounty)} bounty
+                        </Badge>
+                      )}
+                      <span className="text-xs text-slate-400">
+                        {formatDate(question.created_at)}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{question.title}</h3>
+                      <p className="text-sm text-slate-600 line-clamp-3">
+                        {question.description}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {question.tags.slice(0, 6).map((tag) => (
+                        <Badge key={tag} variant="secondary" className="rounded-full px-3 py-1">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        <ThumbsUp className="size-3.5" />
+                        {formatShortNumber(question.vote_count)} votes
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <MessageSquare className="size-3.5" />
+                        {formatShortNumber(question.solutions_count)} answers
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Eye className="size-3.5" />
+                        {formatShortNumber(question.view_count)} views
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Users className="size-3.5" />
+                        {question.authorName}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
-
-                <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-                  <Card className="border-0 bg-white shadow-sm">
-                    <CardHeader className="pb-4">
-                      <CardTitle>Moderation insights</CardTitle>
-                      <p className="text-sm text-slate-500">Operational performance signals</p>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-3">
-                      {moderationInsights.map((insight) => (
-                        <div key={insight.id} className="rounded-xl border border-slate-200 p-4">
-                          <p className="text-xs uppercase text-slate-500">{insight.title}</p>
-                          <p className="mt-3 text-2xl font-semibold text-slate-900">
-                            {insight.value}
-                          </p>
-                          <p
-                            className={`mt-2 text-xs font-medium ${
-                              insight.tone === 'positive' ? 'text-emerald-600' : 'text-amber-600'
-                            }`}
-                          >
-                            {insight.change}
-                          </p>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 bg-white shadow-sm">
-                    <CardHeader className="pb-4">
-                      <CardTitle>Flagged users</CardTitle>
-                      <p className="text-sm text-slate-500">Accounts needing moderation follow up</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {flaggedUsers.map((user) => (
-                        <div key={user.id} className="rounded-lg border border-slate-200 p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                                <span>{user.reason}</span>
-                              </div>
-                              <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
-                                <span>{user.reports} reports</span>
-                                <span>Last seen {formatTimeAgo(user.lastSeen)}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleUserAction(user.id, 'review')}
-                              >
-                                <Eye className="h-4 w-4 text-slate-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleUserAction(user.id, 'mute')}
-                              >
-                                <EyeOff className="h-4 w-4 text-slate-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleUserAction(user.id, 'remove')}
-                              >
-                                <UserX className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="users" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-                  <div className="space-y-6">
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="pb-4">
-                        <CardTitle>Community engagement</CardTitle>
-                        <p className="text-sm text-slate-500">Answer quality and participation metrics</p>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between text-sm">
-                            <p className="text-slate-600">Answer rate</p>
-                            <p className="font-semibold text-slate-900">{answerRate}%</p>
-                          </div>
-                          <Progress value={answerRate} className="mt-2 h-2" />
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-lg border border-slate-200 p-3">
-                            <p className="text-xs uppercase text-slate-500">Total questions</p>
-                            <p className="mt-2 text-lg font-semibold text-slate-900">
-                              {numberFormatter.format(totalQuestions)}
-                            </p>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 p-3">
-                            <p className="text-xs uppercase text-slate-500">Total answers</p>
-                            <p className="mt-2 text-lg font-semibold text-slate-900">
-                              {numberFormatter.format(totalAnswers)}
-                            </p>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 p-3">
-                            <p className="text-xs uppercase text-slate-500">Unanswered</p>
-                            <p className="mt-2 text-lg font-semibold text-slate-900">
-                              {numberFormatter.format(unansweredQuestions)}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="pb-4">
-                        <CardTitle>Top reporters</CardTitle>
-                        <p className="text-sm text-slate-500">Community members flagging content the most</p>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {topReporters.length ? (
-                          topReporters.map((leader, index) => (
-                            <div key={leader.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                              <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold text-slate-400">#{index + 1}</span>
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900">{leader.name}</p>
-                                  <p className="text-xs text-slate-500">
-                                    {numberFormatter.format(leader.reports)} reports
-                                  </p>
-                                </div>
-                              </div>
-                              <Badge className="bg-indigo-500/10 text-indigo-600">
-                                {numberFormatter.format(leader.reports)}
-                              </Badge>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500">No reports submitted yet.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="space-y-6">
-                    <Dialog
-                      open={showCreateFAQDialog}
-                      onOpenChange={setShowCreateFAQDialog}
-                    >
-                      <Card className="border-0 bg-white shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between pb-4">
-                          <div>
-                            <CardTitle>Knowledge base</CardTitle>
-                            <p className="text-sm text-slate-500">FAQs used by moderators</p>
-                          </div>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline">
-                              <Plus className="mr-2 h-4 w-4" />
-                              New FAQ
-                            </Button>
-                          </DialogTrigger>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {faqs.map((faq) => (
-                            <div key={faq.id} className="rounded-lg border border-slate-200 p-3">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900">{faq.question}</p>
-                                  <p className="mt-1 text-xs text-slate-500">{faq.answer}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-600">
-                                    {formatCategoryLabel(faq.category)}
-                                  </Badge>
-                                  <Button variant="ghost" size="icon">
-                                    <Edit className="h-4 w-4 text-slate-500" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </CardContent>
-                      </Card>
-
-                      <DialogContent className="sm:max-w-lg">
-                        <DialogHeader>
-                          <DialogTitle>Create FAQ entry</DialogTitle>
-                        </DialogHeader>
-                        <form className="space-y-4" onSubmit={handleCreateFAQ}>
-                          <div className="space-y-2">
-                            <Label htmlFor="faq-question">Question</Label>
-                            <Input
-                              id="faq-question"
-                              value={newFAQ.question}
-                              onChange={(event) =>
-                                setNewFAQ((prev) => ({ ...prev, question: event.target.value }))
-                              }
-                              placeholder="When should we escalate to the on-call lead?"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="faq-answer">Answer</Label>
-                            <Textarea
-                              id="faq-answer"
-                              value={newFAQ.answer}
-                              onChange={(event) =>
-                                setNewFAQ((prev) => ({ ...prev, answer: event.target.value }))
-                              }
-                              rows={4}
-                              placeholder="Outline the steps moderators should follow."
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Category</Label>
-                            <Select
-                              value={newFAQ.category}
-                              onValueChange={(value) =>
-                                setNewFAQ((prev) => ({ ...prev, category: value }))
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="moderation">Moderation</SelectItem>
-                                <SelectItem value="policy">Policy</SelectItem>
-                                <SelectItem value="operations">Operations</SelectItem>
-                                <SelectItem value="support">Support</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => setShowCreateFAQDialog(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button type="submit" className="bg-slate-900 text-white hover:bg-slate-800">
-                              Save FAQ
-                            </Button>
-                          </div>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
-
-                    <Card className="border-0 bg-white shadow-sm">
-                      <CardHeader className="pb-4">
-                        <CardTitle>Community alerts</CardTitle>
-                        <p className="text-sm text-slate-500">Signals that may need messaging</p>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">Visibility dips</p>
-                            <p className="text-xs text-slate-500">4 posts hidden in the last 12 hours</p>
-                          </div>
-                          <Badge className="bg-amber-500/10 text-amber-600">Review</Badge>
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">Mentor availability</p>
-                            <p className="text-xs text-slate-500">Coverage holding steady at 92%</p>
-                          </div>
-                          <Badge className="bg-emerald-500/10 text-emerald-600">Healthy</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
+              ))
+            )}
+          </CardContent>
+          <CardFooter className="justify-between border-t px-6 py-4 text-sm text-slate-500">
+            <span>
+              Showing {filteredQuestions.length} of {questions.length} questions
+            </span>
+            <Button variant="outline" onClick={loadDashboard}>
+              Refresh
+            </Button>
+          </CardFooter>
+        </section>
       </div>
+
+      <aside className="space-y-6">
+        <Card className="border-none bg-white shadow-sm ring-1 ring-slate-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Tag className="size-4 text-emerald-500" />
+              Popular Tags
+            </CardTitle>
+            <CardDescription>Top topics the community engages with.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {popularTags.length === 0 && (
+              <p className="text-sm text-slate-500">No tags yet.</p>
+            )}
+            {popularTags.map((tag) => (
+              <div key={tag.name} className="flex items-center justify-between text-sm">
+                <span className="font-medium text-slate-700">{tag.name}</span>
+                <span className="text-slate-500">{formatShortNumber(tag.count)} questions</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-white shadow-sm ring-1 ring-slate-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Award className="size-4 text-indigo-500" />
+              Top Contributors
+            </CardTitle>
+            <CardDescription>Members driving the most impact.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {topContributors.length === 0 && (
+              <p className="text-sm text-slate-500">No contributors yet.</p>
+            )}
+            {topContributors.map((user) => (
+              <div key={user.id} className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="w-7 justify-center bg-slate-100 text-slate-700">
+                      #{user.rank}
+                    </Badge>
+                    <span className="font-medium text-slate-700">{user.name}</span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    {formatShortNumber(user.reputation)} reputation ·{" "}
+                    {formatShortNumber(user.answers)} answers
+                  </p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-white shadow-sm ring-1 ring-slate-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="size-4 text-slate-500" />
+              Recent Activity
+            </CardTitle>
+            <CardDescription>Latest movements in the knowledge base.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {recentActivity.length === 0 && (
+              <p className="text-sm text-slate-500">No activity recorded.</p>
+            )}
+            {recentActivity.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 text-sm">
+                <ChevronRight className="mt-0.5 size-4 text-slate-400" />
+                <div className="flex-1">
+                  <p className="font-medium text-slate-700">{item.title}</p>
+                  <p className="text-xs text-slate-500">
+                    {formatShortNumber(item.answers)} answers · {formatTimeAgo(item.updated_at)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </aside>
     </div>
   );
 }

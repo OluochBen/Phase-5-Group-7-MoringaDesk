@@ -37,6 +37,18 @@ class QuestionService:
     def _serialize_question(question, include_answers=False, current_user_id=None):
         tags = [tag.name for tag in getattr(question, "tags", [])]
         author = question.author.to_dict() if getattr(question, "author", None) else None
+        solutions = list(getattr(question, "solutions", []))
+        follows = list(getattr(question, "follows", []))
+
+        vote_total = sum(solution.get_vote_count() for solution in solutions)
+        upvotes_total = sum(solution.get_upvotes() for solution in solutions)
+        downvotes_total = sum(solution.get_downvotes() for solution in solutions)
+        view_count = len(follows)
+        bounty_value = (
+            50 if question.problem_type and "bounty" in question.problem_type.lower() else 0
+        )
+        is_solved = len(solutions) > 0
+        is_featured = vote_total >= 5 or view_count >= 5 or bounty_value > 0
 
         created_at = question.created_at.isoformat() if question.created_at else None
         updated_at = question.updated_at.isoformat() if question.updated_at else None
@@ -55,7 +67,17 @@ class QuestionService:
             "authorName": author.get("name") if author else None,
             "tags": tags,
             "solutions_count": len(question.solutions),
-            "follows_count": len(question.follows),
+            "follows_count": view_count,
+            "view_count": view_count,
+            "views": view_count,
+            "followers_count": view_count,
+            "vote_total": vote_total,
+            "vote_count": vote_total,
+            "upvotes_total": upvotes_total,
+            "downvotes_total": downvotes_total,
+            "bounty": bounty_value,
+            "is_solved": is_solved,
+            "is_featured": is_featured,
         }
 
         if include_answers:

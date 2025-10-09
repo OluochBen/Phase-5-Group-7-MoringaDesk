@@ -5,8 +5,15 @@ from .vote_service import VoteService
 from .notification_service import NotificationService
 from .faq_service import FAQService
 from .websocket_service import WebSocketService
+from .admin_dashboard_service import AdminDashboardService
 
 __all__ = [
-    'AuthService', 'QuestionService', 'SolutionService', 
-    'VoteService', 'NotificationService', 'FAQService', 'WebSocketService'
+    "AuthService",
+    "QuestionService",
+    "SolutionService",
+    "VoteService",
+    "NotificationService",
+    "FAQService",
+    "WebSocketService",
+    "AdminDashboardService",
 ]

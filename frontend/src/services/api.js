@@ -44,8 +44,23 @@ export const healthApi = {
 };
 
 export const faqApi = {
-  list: ({ page = 1, per_page = 10 } = {}) =>
-    api.get("/faqs", { params: { page, per_page } }).then((r) => r.data),
+  list: ({ page = 1, per_page = 10, search, category } = {}) =>
+    api
+      .get("/faqs", {
+        params: {
+          page,
+          per_page,
+          search: search || undefined,
+          category: category || undefined,
+        },
+      })
+      .then((r) => r.data),
+
+  stats: () => api.get("/faqs/stats").then((r) => r.data),
+
+  recordView: (id) => api.post(`/faqs/${id}/view`).then((r) => r.data),
+
+  markHelpful: (id) => api.post(`/faqs/${id}/helpful`).then((r) => r.data),
 };
 
 export const authApi = {

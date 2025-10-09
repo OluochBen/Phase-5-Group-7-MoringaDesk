@@ -178,5 +178,9 @@ export const profileApi = {
   get: (userId) => api.get(`/profile/${userId}`).then((r) => r.data),
 };
 
+export const adminApi = {
+  dashboard: () => api.get("/admin/dashboard").then((r) => r.data),
+};
+
 // ✅ default axios instance
 export default api;

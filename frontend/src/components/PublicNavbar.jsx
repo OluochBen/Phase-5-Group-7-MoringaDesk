@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 
 export function PublicNavbar({ onLogin, onSignUp }) {
@@ -17,18 +18,18 @@ export function PublicNavbar({ onLogin, onSignUp }) {
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-600 hover:text-green-600 transition-colors">
+            <a href="/#features" className="text-gray-600 hover:text-green-600 transition-colors">
               Features
             </a>
-            <a href="#topics" className="text-gray-600 hover:text-green-600 transition-colors">
+            <a href="/#topics" className="text-gray-600 hover:text-green-600 transition-colors">
               Topics
             </a>
-            <a href="#community" className="text-gray-600 hover:text-green-600 transition-colors">
+            <a href="/#community" className="text-gray-600 hover:text-green-600 transition-colors">
               Community
             </a>
-            <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors">
+            <Link to="/about" className="text-gray-600 hover:text-green-600 transition-colors">
               About
-            </a>
+            </Link>
           </div>
 
           {/* Auth Buttons */}

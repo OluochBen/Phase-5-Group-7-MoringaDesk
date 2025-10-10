@@ -1,26 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowRight,
-  MessageSquare,
-  Users,
-  TrendingUp,
-  Search,
-  Shield,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, MessageSquare, Users, TrendingUp, Search, Shield, Zap } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { publicApi } from "../services/api";
+
+const numberFormatter = new Intl.NumberFormat("en-US");
 
 export function Homepage() {
   const navigate = useNavigate();
 
-  const stats = {
-    questions: "10,000+",
-    users: "5,000+",
-    answers: "25,000+",
-    communities: "50+",
+  const [stats, setStats] = useState({
+    questions: null,
+    users: null,
+    answers: null,
+    communities: null,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadStats() {
+      try {
+        const data = await publicApi.stats();
+        if (isMounted && data) {
+          setStats({
+            questions: data.questions ?? null,
+            users: data.users ?? null,
+            answers: data.answers ?? null,
+            communities: data.communities ?? null,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load public stats", error);
+      }
+    }
+
+    loadStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const formatStat = (value) => {
+    if (value === null || value === undefined) {
+      return "—";
+    }
+    return numberFormatter.format(value);
   };
 
   const features = [
@@ -94,7 +122,6 @@ export function Homepage() {
       avatar: "LR",
     },
   ];
-
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -128,6 +155,16 @@ export function Homepage() {
               Sign In
             </Button>
           </div>
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => navigate("/about")}
+              className="inline-flex items-center gap-2 text-green-600 font-semibold hover:text-green-700"
+            >
+              Learn more about us
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </section>
 
@@ -137,25 +174,25 @@ export function Homepage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-green-600 mb-2">
-                {stats.questions}
+                {formatStat(stats.questions)}
               </div>
               <div className="text-gray-600">Questions Asked</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                {stats.users}
+                {formatStat(stats.users)}
               </div>
               <div className="text-gray-600">Active Users</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-purple-600 mb-2">
-                {stats.answers}
+                {formatStat(stats.answers)}
               </div>
               <div className="text-gray-600">Answers Provided</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-orange-600 mb-2">
-                {stats.communities}
+                {formatStat(stats.communities)}
               </div>
               <div className="text-gray-600">Topic Communities</div>
             </div>

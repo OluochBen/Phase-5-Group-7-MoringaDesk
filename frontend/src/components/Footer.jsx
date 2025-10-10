@@ -19,7 +19,7 @@ export function Footer() {
       { name: 'Feature Requests', href: '#requests' }
     ],
     company: [
-      { name: 'About Us', href: '#about' },
+      { name: 'About Us', href: '/about' },
       { name: 'Blog', href: '#blog' },
       { name: 'Careers', href: '#careers' },
       { name: 'Press', href: '#press' }

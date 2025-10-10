@@ -182,5 +182,9 @@ export const adminApi = {
   dashboard: () => api.get("/admin/dashboard").then((r) => r.data),
 };
 
+export const publicApi = {
+  stats: () => api.get("/stats").then((r) => r.data),
+};
+
 // ✅ default axios instance
 export default api;

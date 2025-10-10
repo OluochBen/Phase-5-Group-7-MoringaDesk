@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -41,6 +41,7 @@ def create_app():
             "http://localhost:5173",
             "http://127.0.0.1:5173",
             "https://moringadesk-gcvu.onrender.com",
+            "https://moringadesk-gteo.onrender.com",
         ],
     )
 
@@ -53,6 +54,7 @@ def create_app():
                     "http://localhost:5173",
                     "http://127.0.0.1:5173",
                     "https://moringadesk-gcvu.onrender.com",
+                    "https://moringadesk-gteo.onrender.com",
                 ]
             }
         },
@@ -90,5 +92,18 @@ def create_app():
     @app.route("/ping", methods=["GET", "OPTIONS"])
     def ping():
         return {"status": "ok"}, 200
+
+    # --- Frontend fallback (for SPA routes) ---
+    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+
+    if os.path.isdir(frontend_dist):
+        @app.route("/", defaults={"path": ""}, methods=["GET"])
+        @app.route("/<path:path>", methods=["GET"])
+        def serve_frontend(path):
+            """Serve built frontend files with index.html fallback."""
+            target = os.path.join(frontend_dist, path)
+            if path and os.path.isfile(target):
+                return send_from_directory(frontend_dist, path)
+            return send_from_directory(frontend_dist, "index.html")
 
     return app

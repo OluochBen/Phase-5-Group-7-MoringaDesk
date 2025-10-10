@@ -1,18 +1,27 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import (
-    create_access_token,
-    jwt_required,
-    get_jwt_identity
-)
+from flask_cors import cross_origin
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+
 from .. import db
 from ..models.user import User
 import datetime
 
+
 auth_bp = Blueprint("auth", __name__)
 
+
+def _handle_preflight():
+    """Return an empty 204 for preflight requests."""
+    return ("", 204)
+
+
 # --- Register ---
-@auth_bp.route("/register", methods=["POST"])
+@auth_bp.route("/register", methods=["POST", "OPTIONS"])
+@cross_origin()
 def register():
+    if request.method == "OPTIONS":
+        return _handle_preflight()
+
     data = request.get_json() or {}
 
     name = data.get("name")
@@ -42,8 +51,12 @@ def register():
 
 
 # --- Login ---
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route("/login", methods=["POST", "OPTIONS"])
+@cross_origin()
 def login():
+    if request.method == "OPTIONS":
+        return _handle_preflight()
+
     data = request.get_json() or {}
     email = data.get("email")
     password = data.get("password")
@@ -64,12 +77,16 @@ def login():
 
 
 # --- Current User ---
-@auth_bp.route("/me", methods=["GET"])
+@auth_bp.route("/me", methods=["GET", "OPTIONS"])
+@cross_origin()
 @jwt_required()
 def me():
+    if request.method == "OPTIONS":
+        return _handle_preflight()
+
     user_id = get_jwt_identity()
     try:
-        user_id = int(user_id)  # ✅ convert back to int
+        user_id = int(user_id)  # convert back to int
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid token"}), 422
 

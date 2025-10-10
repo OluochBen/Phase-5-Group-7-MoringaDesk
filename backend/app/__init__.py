@@ -62,6 +62,7 @@ def create_app():
     )
 
     # --- Blueprints ---
+    from .routes.public import public_bp
     from .routes.auth import auth_bp
     from .routes.problems import problems_bp
     from .routes.faqs import faqs_bp
@@ -71,6 +72,7 @@ def create_app():
     from .routes.tags import tags_bp
     from .routes.profile import profile_bp
 
+    app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(problems_bp, url_prefix="/problems")
     app.register_blueprint(faqs_bp, url_prefix="/faqs")

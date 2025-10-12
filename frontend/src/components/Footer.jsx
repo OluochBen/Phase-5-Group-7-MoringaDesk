@@ -154,14 +154,14 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row items-center justify-between text-sm text-gray-400">
-            <div className="flex items-center space-x-1 mb-4 md:mb-0">
+          <div className="flex flex-col gap-4 text-center text-sm text-gray-400 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-1">
               <span>© {currentYear} MoringaDesk. Made with</span>
               <Heart className="w-4 h-4 text-red-500 fill-current" />
               <span>for the developer community.</span>
             </div>
 
-            <div className="flex items-center space-x-6">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
               <span>Version 1.0.0</span>
               <a href="#status" className="hover:text-white transition-colors">System Status</a>
               <a href="#api" className="hover:text-white transition-colors">API Docs</a>

@@ -22,6 +22,7 @@ import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { PasswordReset } from "./components/PasswordReset";
 import { AboutPage } from "./pages/AboutPage";
+import { ContactPage } from "./pages/ContactPage";
 
 // ✅ API
 import { authApi, notificationsApi } from "./services/api";
@@ -169,6 +170,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Auth */}
           <Route

@@ -14,7 +14,7 @@ export function Footer() {
     ],
     support: [
       { name: 'Help Center', href: '#help' },
-      { name: 'Contact Us', href: '#contact' },
+      { name: 'Contact Us', href: '/contact' },
       { name: 'Bug Reports', href: '#bugs' },
       { name: 'Feature Requests', href: '#requests' }
     ],

@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Github, Twitter, Linkedin, Mail, Heart } from 'lucide-react';
 import { Button } from './ui/button';
+import { publicApi } from '../services/api';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
+  const handleSubscribe = async (event) => {
+    event.preventDefault();
+    if (!email.trim()) {
+      setFeedback({ type: 'error', message: 'Please enter your email address.' });
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback(null);
+    try {
+      const response = await publicApi.subscribe(email.trim(), 'footer_newsletter');
+      setFeedback({ type: 'success', message: response?.message ?? 'Thanks for subscribing!' });
+      setEmail('');
+    } catch (error) {
+      const message =
+        error?.response?.data?.errors?.email?.[0] ||
+        error?.response?.data?.message ||
+        'We could not process your subscription. Please try again.';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const footerLinks = {
     product: [
@@ -139,17 +167,36 @@ export function Footer() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent flex-1 md:w-64"
-              />
-              <Button className="bg-green-600 hover:bg-green-700 whitespace-nowrap">
-                Subscribe
-              </Button>
-            </div>
+            <form onSubmit={handleSubscribe} className="w-full md:w-auto">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Enter your email"
+                  className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent flex-1 md:w-64"
+                  aria-label="Email address"
+                  required
+                />
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                >
+                  {submitting ? 'Subscribing…' : 'Subscribe'}
+                </Button>
+              </div>
+            </form>
           </div>
+          {feedback && (
+            <p
+              className={`mt-3 text-sm ${
+                feedback.type === 'success' ? 'text-green-400' : 'text-red-400'
+              }`}
+            >
+              {feedback.message}
+            </p>
+          )}
         </div>
 
         {/* Bottom Bar */}

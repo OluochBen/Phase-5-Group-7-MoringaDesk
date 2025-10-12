@@ -9,9 +9,31 @@ def get_faqs():
     """Get paginated list of FAQs"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
-    
-    result = FAQService.get_faqs(page, per_page)
+    search = request.args.get('search', type=str)
+    category = request.args.get('category', type=str)
+
+    result = FAQService.get_faqs(page, per_page, search=search, category=category)
     return jsonify(result), 200
+
+@faqs_bp.route('/stats', methods=['GET'])
+def get_faq_stats():
+    """Return aggregated FAQ statistics"""
+    result = FAQService.get_stats()
+    return jsonify(result), 200
+
+@faqs_bp.route('/<faq_id>/view', methods=['POST'])
+@jwt_required(optional=True)
+def record_faq_view(faq_id):
+    """Record a view for an FAQ (non-persistent placeholder)."""
+    payload = FAQService.record_view(faq_id)
+    return jsonify(payload), 200
+
+@faqs_bp.route('/<faq_id>/helpful', methods=['POST'])
+@jwt_required(optional=True)
+def mark_faq_helpful(faq_id):
+    """Mark an FAQ as helpful (non-persistent placeholder)."""
+    payload = FAQService.mark_helpful(faq_id)
+    return jsonify(payload), 200
 
 @faqs_bp.route('', methods=['POST'])
 @jwt_required()

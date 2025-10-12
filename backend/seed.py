@@ -65,25 +65,40 @@ def seed_database():
         # --- FAQs ---
         faqs_data = [
             {
-                "question": "How do I get started with Python?",
-                "answer": "Install Python from python.org and learn basics."
+                "question": "What is MoringaDesk?",
+                "answer": (
+                    "MoringaDesk is the central hub for Moringa School learners, alumni, and mentors. "
+                    "It lets you ask questions, share solutions, and collaborate across cohorts in one place."
+                ),
             },
             {
-                "question": "What is the difference between frontend and backend?",
-                "answer": "Frontend is the UI; backend is the server and database."
+                "question": "How do I earn reputation on MoringaDesk?",
+                "answer": (
+                    "Contribute valuable answers, have your solutions accepted, and receive upvotes from the community. "
+                    "Reputation helps showcase your expertise to facilitators and peers."
+                ),
             },
             {
-                "question": "How do I debug my code effectively?",
-                "answer": "Use print, debuggers, logs, and incremental testing."
+                "question": "Can I track updates from my cohort?",
+                "answer": (
+                    "Follow questions from your classmates, enable notifications, and join discussions to stay in sync. "
+                    "Facilitators can also highlight important threads for your cohort."
+                ),
             },
             {
-                "question": "What are the best practices for version control?",
-                "answer": "Commit often, use branches, and pull before pushing."
+                "question": "How do I report inappropriate content?",
+                "answer": (
+                    "Use the report button on any question or answer. The moderation team reviews every report and "
+                    "keeps you updated on the resolution."
+                ),
             },
             {
-                "question": "How do I choose the right programming language?",
-                "answer": "Depends on project, goals, demand, and community support."
-            }
+                "question": "Does MoringaDesk work on mobile?",
+                "answer": (
+                    "Yes. MoringaDesk is responsive and works on any modern mobile browser. "
+                    "Add it to your home screen for quick access."
+                ),
+            },
         ]
 
         for faq in faqs_data:

@@ -7,6 +7,7 @@ from .question_tag import QuestionTag
 from .related_question import RelatedQuestion
 from .follow import Follow
 from .notification import Notification
+from .newsletter_subscriber import NewsletterSubscriber
 from .faq import FAQ
 from .password_reset_token import PasswordResetToken
 from .report import Report
@@ -22,6 +23,7 @@ __all__ = [
     "RelatedQuestion",
     "Follow",
     "Notification",
+    "NewsletterSubscriber",
     "FAQ",
     "PasswordResetToken",
     "Report",

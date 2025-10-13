@@ -285,7 +285,7 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 rounded-full bg-green-600 text-base font-semibold hover:bg-green-700"
+                    className="w-full h-11 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700"
                   >
                     {loading ? "Creating Account…" : "Create Account"}
                   </Button>

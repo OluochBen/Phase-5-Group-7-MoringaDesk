@@ -66,7 +66,7 @@ export function PublicNavbar({ onLogin, onSignUp }) {
           </Button>
           <Button
             onClick={onSignUp}
-            className="rounded-full bg-green-600 px-5 text-sm font-semibold hover:bg-green-700"
+            className="rounded-full bg-green-600 px-5 text-sm font-bold text-white hover:bg-green-700"
           >
             Get Started
           </Button>
@@ -135,7 +135,7 @@ export function PublicNavbar({ onLogin, onSignUp }) {
                   setMenuOpen(false);
                   onSignUp?.();
                 }}
-                className="w-full rounded-full bg-green-600 text-sm font-semibold text-white hover:bg-green-700"
+                className="w-full rounded-full bg-green-600 text-sm font-bold text-white hover:bg-green-700"
               >
                 Get Started
               </Button>

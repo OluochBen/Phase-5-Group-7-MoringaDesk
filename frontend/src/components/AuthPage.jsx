@@ -294,11 +294,19 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
             </Tabs>
             <p className="mt-6 text-center text-xs text-muted-foreground">
               By continuing, you agree to our
-              <button type="button" className="mx-1 text-emerald-600 hover:underline">
+              <button
+                type="button"
+                className="mx-1 text-emerald-600 hover:underline"
+                onClick={() => navigate("/terms")}
+              >
                 Terms of Service
               </button>
               and
-              <button type="button" className="mx-1 text-emerald-600 hover:underline">
+              <button
+                type="button"
+                className="mx-1 text-emerald-600 hover:underline"
+                onClick={() => navigate("/privacy")}
+              >
                 Privacy Policy
               </button>
             </p>

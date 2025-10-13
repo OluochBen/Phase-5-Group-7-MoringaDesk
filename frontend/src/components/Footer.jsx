@@ -53,10 +53,10 @@ export function Footer() {
       { name: 'Press', href: '#press' }
     ],
     legal: [
-      { name: 'Privacy Policy', href: '#privacy' },
-      { name: 'Terms of Service', href: '#terms' },
-      { name: 'Code of Conduct', href: '#conduct' },
-      { name: 'Guidelines', href: '#guidelines' }
+      { name: 'Privacy Policy', href: '/privacy' },
+      { name: 'Terms of Service', href: '/terms' },
+      { name: 'Code of Conduct', href: '/conduct' },
+      { name: 'Community Guidelines', href: '/guidelines' }
     ]
   };
 

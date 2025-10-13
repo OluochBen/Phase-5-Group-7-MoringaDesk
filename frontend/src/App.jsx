@@ -23,6 +23,10 @@ import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { PasswordReset } from "./components/PasswordReset";
 import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
+import { TermsPage } from "./pages/LegalTermsPage";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
+import { CodeOfConductPage } from "./pages/CodeOfConductPage";
+import { CommunityGuidelinesPage } from "./pages/GuidelinesPage";
 
 // ✅ API
 import { authApi, notificationsApi } from "./services/api";
@@ -171,6 +175,10 @@ export default function App() {
           <Route path="/" element={<Homepage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/conduct" element={<CodeOfConductPage />} />
+          <Route path="/guidelines" element={<CommunityGuidelinesPage />} />
 
           {/* Auth */}
           <Route

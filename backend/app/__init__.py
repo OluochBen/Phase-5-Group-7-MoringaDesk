@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from authlib.integrations.flask_client import OAuth
 import os
 from dotenv import load_dotenv
 
@@ -12,6 +13,7 @@ db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 socketio = SocketIO()
+oauth = OAuth()
 
 
 def create_app():
@@ -44,6 +46,12 @@ def create_app():
             "https://moringadesk-gteo.onrender.com",
         ],
     )
+    oauth.init_app(app)
+    app.config.setdefault(
+        "SOCIAL_DEFAULT_REDIRECT",
+        os.getenv("SOCIAL_DEFAULT_REDIRECT", "http://localhost:5173/auth/callback"),
+    )
+    register_oauth_clients(app)
 
     # --- CORS ---
     CORS(
@@ -109,3 +117,42 @@ def create_app():
             return send_from_directory(frontend_dist, "index.html")
 
     return app
+
+
+def register_oauth_clients(app):
+    google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+    google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    if google_client_id and google_client_secret:
+        oauth.register(
+            name="google",
+            client_id=google_client_id,
+            client_secret=google_client_secret,
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+        )
+
+    github_client_id = os.getenv("GITHUB_CLIENT_ID")
+    github_client_secret = os.getenv("GITHUB_CLIENT_SECRET")
+    if github_client_id and github_client_secret:
+        oauth.register(
+            name="github",
+            client_id=github_client_id,
+            client_secret=github_client_secret,
+            access_token_url="https://github.com/login/oauth/access_token",
+            authorize_url="https://github.com/login/oauth/authorize",
+            api_base_url="https://api.github.com/",
+            client_kwargs={"scope": "read:user user:email"},
+        )
+
+    facebook_client_id = os.getenv("FACEBOOK_CLIENT_ID")
+    facebook_client_secret = os.getenv("FACEBOOK_CLIENT_SECRET")
+    if facebook_client_id and facebook_client_secret:
+        oauth.register(
+            name="facebook",
+            client_id=facebook_client_id,
+            client_secret=facebook_client_secret,
+            access_token_url="https://graph.facebook.com/v13.0/oauth/access_token",
+            authorize_url="https://www.facebook.com/v13.0/dialog/oauth",
+            api_base_url="https://graph.facebook.com/v13.0/",
+            client_kwargs={"scope": "email"},
+        )

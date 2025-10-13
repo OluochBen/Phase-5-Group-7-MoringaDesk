@@ -94,6 +94,22 @@ npm install
 npm run dev
 ```
 
+## Environment Variables
+
+Copy `.env.example` to `.env` in both the project root and `frontend/` directory as needed, then fill in values.
+
+- **Backend social login** (optional):
+  - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+  - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+  - `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET`
+  - `SOCIAL_DEFAULT_REDIRECT` (defaults to `http://localhost:5173/auth/callback`)
+- **Frontend social login** (optional):
+  - `VITE_SOCIAL_AUTH_CALLBACK_URL` (defaults to `http://localhost:5173/auth/callback`)
+
+```bash
+cp .env.example .env
+```
+
 ## Gitflow & Collaboration
 
 - Use feature branches (feature/<name>)

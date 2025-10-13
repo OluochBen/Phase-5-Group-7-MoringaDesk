@@ -115,15 +115,21 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
         </div>
 
         {/* Auth tabs */}
-        <Card>
+        <Card className="border border-emerald-100 bg-white shadow-lg shadow-emerald-100/40">
           <CardContent className="p-6">
             <Tabs value={tab} onValueChange={setTab} className="w-full">
               <div className="flex items-center justify-center mb-6">
-                <TabsList className="w-full">
-                  <TabsTrigger value="login" className="flex-1">
+                <TabsList className="w-full rounded-full bg-emerald-50 p-1">
+                  <TabsTrigger
+                    value="login"
+                    className="flex-1 rounded-full data-[state=active]:bg-white data-[state=active]:text-emerald-600"
+                  >
                     Login
                   </TabsTrigger>
-                  <TabsTrigger value="signup" className="flex-1">
+                  <TabsTrigger
+                    value="signup"
+                    className="flex-1 rounded-full data-[state=active]:bg-white data-[state=active]:text-emerald-600"
+                  >
                     Sign Up
                   </TabsTrigger>
                 </TabsList>
@@ -195,7 +201,7 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-green-600 hover:bg-green-700 h-11 text-base"
+                    className="w-full h-11 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700"
                   >
                     {loading ? "Signing in…" : "Sign In"}
                   </Button>
@@ -279,13 +285,23 @@ export function AuthPage({ defaultTab = "login", onLogin, onRegister }) {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-green-600 hover:bg-green-700 h-11 text-base"
+                    className="w-full h-11 rounded-full bg-green-600 text-base font-semibold hover:bg-green-700"
                   >
                     {loading ? "Creating Account…" : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              By continuing, you agree to our
+              <button type="button" className="mx-1 text-emerald-600 hover:underline">
+                Terms of Service
+              </button>
+              and
+              <button type="button" className="mx-1 text-emerald-600 hover:underline">
+                Privacy Policy
+              </button>
+            </p>
           </CardContent>
         </Card>
       </div>

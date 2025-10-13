@@ -3,6 +3,33 @@ import axios from "axios";
 // ✅ Use local API by default, fallback to deployed if provided
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
+export const API_BASE_URL = API_BASE;
+
+export function buildSocialAuthUrl(provider, options = {}) {
+  if (!provider) {
+    throw new Error("Provider is required to build a social auth URL");
+  }
+
+  const { redirectUrl, intent = "login", state } = options;
+  const fallbackCallback =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback`
+      : "/auth/callback";
+  const callbackUrl = redirectUrl || fallbackCallback;
+
+  const params = new URLSearchParams({
+    redirect_url: callbackUrl,
+    intent,
+  });
+
+  if (state) {
+    params.set("state", state);
+  }
+
+  const encodedProvider = encodeURIComponent(provider);
+  return `${API_BASE}/auth/oauth/${encodedProvider}?${params.toString()}`;
+}
+
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,

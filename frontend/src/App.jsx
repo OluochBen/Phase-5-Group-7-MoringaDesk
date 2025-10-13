@@ -21,6 +21,7 @@ import { FAQScreen } from "./components/FAQScreen";
 import NewQuestionForm from "./components/NewQuestionForm";
 import { EnhancedUserProfile } from "./components/EnhancedUserProfile";
 import { PasswordReset } from "./components/PasswordReset";
+import { SocialAuthCallback } from "./components/SocialAuthCallback";
 import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
 import { TermsPage } from "./pages/LegalTermsPage";
@@ -189,6 +190,7 @@ export default function App() {
             path="/register"
             element={<AuthPage defaultTab="signup" onLogin={handleLogin} onRegister={handleLogin} />}
           />
+          <Route path="/auth/callback" element={<SocialAuthCallback onComplete={handleLogin} />} />
           <Route
             path="/reset-password"
             element={<PasswordReset onSuccess={() => navigate("/login")} onClose={() => navigate("/login")} />}

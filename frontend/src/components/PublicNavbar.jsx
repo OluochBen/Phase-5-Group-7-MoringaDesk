@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 
 const NAV_LINKS = [
-  { label: "Features", href: "/#features", external: false },
-  { label: "Topics", href: "/#topics", external: false },
-  { label: "Community", href: "/#community", external: false },
-  { label: "About", href: "/about", external: false },
-  { label: "Contact", href: "/contact", external: false },
+  { label: "Features", href: "/#features" },
+  { label: "Topics", href: "/#topics" },
+  { label: "Community", href: "/#community" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export function PublicNavbar({ onLogin, onSignUp }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -59,14 +60,20 @@ export function PublicNavbar({ onLogin, onSignUp }) {
         <div className="hidden items-center gap-3 md:flex">
           <Button
             variant="ghost"
-            onClick={onLogin}
+            onClick={() => {
+              onLogin?.();
+              navigate("/login");
+            }}
             className="text-sm font-semibold text-gray-600 hover:text-green-600"
           >
             Sign In
           </Button>
           <Button
-            onClick={onSignUp}
-            className="rounded-full bg-green-600 px-5 text-sm font-bold text-white hover:bg-green-700"
+            onClick={() => {
+              onSignUp?.();
+              navigate("/register");
+            }}
+            className="rounded-full bg-green-600 px-5 text-sm font-semibold text-white hover:bg-green-700"
           >
             Get Started
           </Button>
@@ -86,9 +93,7 @@ export function PublicNavbar({ onLogin, onSignUp }) {
       <div className="md:hidden">
         <div
           className={`absolute left-0 right-0 top-16 z-40 mx-4 transition-all duration-200 ${
-            menuOpen
-              ? "pointer-events-auto translate-y-0 opacity-100"
-              : "pointer-events-none -translate-y-4 opacity-0"
+            menuOpen ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none -translate-y-4 opacity-0"
           }`}
         >
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
@@ -125,6 +130,7 @@ export function PublicNavbar({ onLogin, onSignUp }) {
                 onClick={() => {
                   setMenuOpen(false);
                   onLogin?.();
+                  navigate("/login");
                 }}
                 className="w-full border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
@@ -134,8 +140,9 @@ export function PublicNavbar({ onLogin, onSignUp }) {
                 onClick={() => {
                   setMenuOpen(false);
                   onSignUp?.();
+                  navigate("/register");
                 }}
-                className="w-full rounded-full bg-green-600 text-sm font-bold text-white hover:bg-green-700"
+                className="w-full rounded-full bg-green-600 text-sm font-semibold text-white hover:bg-green-700"
               >
                 Get Started
               </Button>
@@ -146,3 +153,5 @@ export function PublicNavbar({ onLogin, onSignUp }) {
     </nav>
   );
 }
+
+export default PublicNavbar;

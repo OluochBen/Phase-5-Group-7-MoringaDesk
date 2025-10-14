@@ -215,5 +215,28 @@ export const publicApi = {
     api.post("/subscribe", { email, source }).then((r) => r.data),
 };
 
+export const blogApi = {
+  list: ({ page = 1, per_page = 6, search, status } = {}) =>
+    api
+      .get("/blog/posts", {
+        params: {
+          page,
+          per_page,
+          search: search || undefined,
+          status: status || undefined,
+        },
+      })
+      .then((r) => r.data),
+
+  get: (identifier, { include = "full" } = {}) =>
+    api.get(`/blog/posts/${identifier}`, { params: { include } }).then((r) => r.data?.item ?? r.data),
+
+  create: (payload) => api.post("/blog/posts", payload).then((r) => r.data),
+
+  update: (postId, payload) => api.put(`/blog/posts/${postId}`, payload).then((r) => r.data),
+
+  remove: (postId) => api.delete(`/blog/posts/${postId}`).then((r) => r.data),
+};
+
 // ✅ default axios instance
 export default api;

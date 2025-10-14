@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { adminApi } from "../services/api";
+import { AdminBlogManager } from "./AdminBlogManager";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -436,6 +437,8 @@ export function EnhancedAdminPanel({ currentUser }) {
             </Button>
           </CardFooter>
         </section>
+
+        <AdminBlogManager />
       </div>
 
       <aside className="space-y-6">

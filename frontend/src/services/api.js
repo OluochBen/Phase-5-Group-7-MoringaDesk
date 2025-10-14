@@ -213,6 +213,7 @@ export const publicApi = {
   stats: () => api.get("/stats").then((r) => r.data),
   subscribe: (email, source = "footer") =>
     api.post("/subscribe", { email, source }).then((r) => r.data),
+  status: () => api.get("/status").then((r) => r.data),
 };
 
 export const blogApi = {

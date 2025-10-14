@@ -72,6 +72,8 @@ def seed_database():
                     "MoringaDesk is the central hub for Moringa School learners, alumni, and mentors. "
                     "It lets you ask questions, share solutions, and collaborate across cohorts in one place."
                 ),
+                "category": "Getting Started",
+                "tags": ["overview", "community"],
             },
             {
                 "question": "How do I earn reputation on MoringaDesk?",
@@ -79,6 +81,8 @@ def seed_database():
                     "Contribute valuable answers, have your solutions accepted, and receive upvotes from the community. "
                     "Reputation helps showcase your expertise to facilitators and peers."
                 ),
+                "category": "Reputation",
+                "tags": ["reputation", "contributions"],
             },
             {
                 "question": "Can I track updates from my cohort?",
@@ -86,6 +90,8 @@ def seed_database():
                     "Follow questions from your classmates, enable notifications, and join discussions to stay in sync. "
                     "Facilitators can also highlight important threads for your cohort."
                 ),
+                "category": "Collaboration",
+                "tags": ["cohort", "notifications"],
             },
             {
                 "question": "How do I report inappropriate content?",
@@ -93,6 +99,8 @@ def seed_database():
                     "Use the report button on any question or answer. The moderation team reviews every report and "
                     "keeps you updated on the resolution."
                 ),
+                "category": "Moderation",
+                "tags": ["moderation", "support"],
             },
             {
                 "question": "Does MoringaDesk work on mobile?",
@@ -100,17 +108,28 @@ def seed_database():
                     "Yes. MoringaDesk is responsive and works on any modern mobile browser. "
                     "Add it to your home screen for quick access."
                 ),
+                "category": "Product",
+                "tags": ["mobile", "accessibility"],
             },
         ]
 
         for faq in faqs_data:
-            if not FAQ.query.filter_by(question=faq["question"]).first():
-                db.session.add(FAQ(
-                    question=faq["question"],
-                    answer=faq["answer"],
-                    created_by=admin_user.id
-                ))
+            existing_faq = FAQ.query.filter_by(question=faq["question"]).first()
+            if not existing_faq:
+                db.session.add(
+                    FAQ(
+                        question=faq["question"],
+                        answer=faq["answer"],
+                        category=faq.get("category", "General"),
+                        tags=faq.get("tags", []),
+                        created_by=admin_user.id,
+                    )
+                )
                 print(f"✓ Created FAQ: {faq['question'][:50]}...")
+            else:
+                existing_faq.category = faq.get("category", existing_faq.category)
+                existing_faq.tags = faq.get("tags", existing_faq.tags or [])
+                print(f"✓ FAQ already exists: {faq['question'][:50]}...")
 
         db.session.commit()
 

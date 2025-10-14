@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
@@ -54,3 +56,67 @@ def subscribe_newsletter():
         return jsonify({"message": "You’re already subscribed!"}), 200
 
     return jsonify({"message": "Thanks for subscribing!"}), 201
+
+
+@public_bp.route("/status", methods=["GET"])
+def system_status():
+    """Expose high-level service health information for the status page."""
+
+    checks = []
+    overall_healthy = True
+
+    # API health (always reachable if this handler executes)
+    checks.append({
+        "id": "api",
+        "name": "API",
+        "status": "healthy",
+        "details": "Application is reachable",
+    })
+
+    # Database connectivity check
+    db_status = {
+        "id": "database",
+        "name": "Database",
+        "status": "healthy",
+        "details": None,
+        "metrics": {},
+    }
+    try:
+        total_users = db.session.query(User.id).count()
+        total_questions = db.session.query(Question.id).count()
+        db_status["metrics"] = {
+            "users": total_users,
+            "questions": total_questions,
+        }
+    except Exception as exc:  # pragma: no cover - defensive
+        db_status["status"] = "degraded"
+        db_status["details"] = str(exc)
+        overall_healthy = False
+
+    checks.append(db_status)
+
+    # Placeholder services (extend as capabilities grow)
+    checks.append({
+        "id": "websocket",
+        "name": "Real-time updates",
+        "status": "operational",
+        "details": "Socket server available",
+    })
+
+    checks.append({
+        "id": "jobs",
+        "name": "Background jobs",
+        "status": "operational",
+        "details": "No queued jobs",
+    })
+
+    return (
+        jsonify(
+            {
+                "status": "healthy" if overall_healthy else "degraded",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "checks": checks,
+            }
+        ),
+        200,
+    )

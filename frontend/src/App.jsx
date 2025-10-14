@@ -28,6 +28,10 @@ import { TermsPage } from "./pages/LegalTermsPage";
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 import { CodeOfConductPage } from "./pages/CodeOfConductPage";
 import { CommunityGuidelinesPage } from "./pages/GuidelinesPage";
+import { SystemStatusPage } from "./pages/SystemStatusPage";
+import { ApiDocsPage } from "./pages/ApiDocsPage";
+import { BlogListPage } from "./pages/BlogListPage";
+import { BlogPostPage } from "./pages/BlogPostPage";
 
 // ✅ API
 import { authApi, notificationsApi } from "./services/api";
@@ -180,6 +184,10 @@ export default function App() {
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/conduct" element={<CodeOfConductPage />} />
           <Route path="/guidelines" element={<CommunityGuidelinesPage />} />
+          <Route path="/status" element={<SystemStatusPage />} />
+          <Route path="/api-docs" element={<ApiDocsPage />} />
+          <Route path="/blog" element={<BlogListPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
 
           {/* Auth */}
           <Route

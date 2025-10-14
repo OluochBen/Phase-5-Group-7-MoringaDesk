@@ -1,129 +1,162 @@
- # MoringaDesk
+# MoringaDesk
 
- ## Problem Statement
-Students at Moringa (and in programming environments in general) often encounter the same technical problems. This leads to delays in getting help and duplication of effort when similar questions are asked repeatedly.
-
-## Solution
-MoringaDesk curates problems and solutions that students face. Each problem can have multiple solutions, and students can vote on or highlight the most useful ones. Problems are tagged and categorized for easy searching and filtering. The platform emphasizes API-first design for scalability.
-
- MoringaDesk is a collaborative platform designed to help students resolve recurring technical challenges by curating problems and community-driven solutions. Built with an API-first approach, it emphasizes scalability, searchability, and real-time feedback.
-
- ## Quick Links
-- Frontend: https://moringadesk-gcvu.onrender.com/
-- Backend: https://phase-5-group-7-moringadesk.onrender.com/ping
-
-## Tech Stack
-| Layer       | Technology              |
-|------------|--------------------------|
-| Frontend   | React.js, Redux Toolkit  |
-| Backend    | Flask (Python)           |
-| Database   | PostgreSQL               |
-| Auth       | JWT (Role-based access)  |
-| CI/CD      | GitHub Actions           |
-| Testing    | Jest (Frontend), Pytest/Minitest (Backend) |
-| Design     | Figma (Mobile-first)     |
+Curated knowledge for Moringa School learners. MoringaDesk keeps questions, answers, and community updates in one searchable, structured space so students can move from confusion to clarity faster.
 
 ---
 
-## Features
+## 🌍 Live Deployments
 
-### MVP Functionality
-- Secure authentication (JWT)
-- Raise categorized questions (language, stage, logic, technical)
-- Reply to problems
-- Vote on solutions
-- Link similar problems
-- FAQ system
-- Notifications:
-  - Votes on solutions
-  - New answers
-  - Updates on followed questions
-
-### Admin Capabilities
-- Manage user accounts
-- Moderate content
-- Create/update FAQs
-- Generate reports on categories & contributors
+- **Web App:** https://moringadesk-gcvu.onrender.com/
+- **API Health Check:** https://phase-5-group-7-moringadesk.onrender.com/ping
+- **System Status:** `/status` rooted off the API base URL
+- **API Reference:** `/api-docs`
 
 ---
 
-## User Stories
+## ✨ Why MoringaDesk?
 
-### Student
-- Register/login securely
-- Raise and reply to questions
-- Vote and highlight useful answers
-- Follow questions and receive updates
-- Search by tags and view related problems
+### Problem
+Learners repeatedly hit the same blockers during bootcamps and projects. Answers are scattered across Slack threads, mentor DMs, or forgotten Notion pages.
 
-### Admin
-- Manage users and content
-- Curate FAQs
-- Monitor flagged activity
-- Generate usage reports
+### Solution
+MoringaDesk captures those questions and the best solutions in a single, API-first platform. Tagging, voting, and moderation ensure answers stay relevant and discoverable. Beyond Q&A, the platform surfaces FAQs, blog stories, and live service health to keep the community informed.
 
 ---
 
-## Setup Instructions
+## 🧱 Architecture Overview
 
-### Backend (Flask)
+| Layer       | Technology                              |
+|-------------|------------------------------------------|
+| Frontend    | React 18, React Router, Tailwind/ShadCN  |
+| Backend     | Flask 3, SQLAlchemy, Marshmallow         |
+| Database    | PostgreSQL (SQLite locally)              |
+| Auth        | JWT (password + Google/GitHub/Facebook)  |
+| Realtime    | Flask-SocketIO (planned expansion)       |
+| Testing     | Jest (frontend), Pytest (backend)        |
+| CI/CD       | GitHub Actions                           |
+| Design      | Figma (mobile-first system)              |
+
+---
+
+## 🚀 Core Capabilities
+
+### For learners
+- Sign in with email/password or social providers.
+- Post questions tagged by topic and stage, add solutions, and vote on helpful answers.
+- Follow discussions, receive notifications, and browse community-curated FAQs.
+- Explore the public blog for success stories and platform updates.
+
+### For facilitators & admins
+- Manage users, moderate content, and curate the FAQ library.
+- Publish blog posts and share upcoming changes with the community.
+- Review dashboard insights (top contributors, unanswered threads, trending tags).
+- Monitor system health via `/status` and share API changes through `/api-docs`.
+
+### Platform highlights
+- Fully documented REST API (`/api-docs`).
+- Live system status dashboard (`/status`).
+- Newsletter capture, public stats, and extensible service checks.
+
+---
+
+## 🛠️ Getting Started
+
+### 1. Prerequisites
+- Python 3.8+
+- Node.js 18+
+- npm (or yarn)
+- PostgreSQL (or rely on the default SQLite for local dev)
+
+### 2. Clone the repository
 ```bash
-# Clone repo
-git clone <git@github.com:OluochBen/Phase-5-Group-7-MoringaDesk.git>
+git clone git@github.com:OluochBen/Phase-5-Group-7-MoringaDesk.git
+cd Phase-5-Group-7-MoringaDesk
+```
+
+### 3. Backend setup
+```bash
 cd backend
 
-# Setup virtual environment
+# Virtualenv (optional but recommended)
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Run server
+# Apply migrations & seed baseline data
+flask db upgrade
+python seed.py
+
+# Launch API on http://127.0.0.1:5000
 flask run
 ```
 
-## Frontend (React)
+### 4. Frontend setup
 ```bash
-cd frontend
-
-# Install dependencies
+cd ../frontend
 npm install
-
-# Start development server
 npm run dev
 ```
 
-## Environment Variables
+Visit `http://localhost:5173` for the React app.
 
-Copy `.env.example` to `.env` in both the project root and `frontend/` directory as needed, then fill in values.
+---
 
-- **Backend social login** (optional):
-  - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-  - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
-  - `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET`
-  - `SOCIAL_DEFAULT_REDIRECT` (defaults to `http://localhost:5173/auth/callback`)
-- **Frontend social login** (optional):
-  - `VITE_SOCIAL_AUTH_CALLBACK_URL` (defaults to `http://localhost:5173/auth/callback`)
+## 🔐 Environment Configuration
+
+Copy `.env.example` to `.env` in both `backend/` and `frontend/`, then fill in values as needed:
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | Optional. Defaults to SQLite `instance/app.db` |
+| `SECRET_KEY` / `JWT_SECRET_KEY` | Flask session + JWT signing keys |
+| Social auth vars | `GOOGLE_...`, `GITHUB_...`, `FACEBOOK_...` enable OAuth sign-in |
+| `SOCIAL_DEFAULT_REDIRECT` | Backend fallback redirect (default `http://localhost:5173/auth/callback`) |
+| `VITE_API_BASE` | Frontend base URL for the API (default `http://localhost:5000`) |
+| `VITE_SOCIAL_AUTH_CALLBACK_URL` | Frontend callback URL (default `http://localhost:5173/auth/callback`) |
 
 ```bash
 cp .env.example .env
 ```
 
-## Gitflow & Collaboration
+---
 
-- Use feature branches (feature/<name>)
-- Submit PRs with descriptive titles and commit messages
-- Follow [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)
-- Reference: [GitHub Actions CI/CD Guide](https://docs.github.com/en/actions)
+## 🧪 Testing & Tooling
 
-## Testing
-- Frontend: npm test (Jest)
-- Backend: pytest or minitest
-All features must include test coverage before deployment.
+```bash
+# Frontend tests
+cd frontend
+npm test
 
-## API & Pagination
-All list-returning endpoints must implement pagination for scalability. Refer to the API documentation for usage examples.
+# Backend tests
+cd ../backend
+pytest
+```
 
-## License
-This project is licensed under the MIT License.
+Continuous integration (GitHub Actions) runs linting and tests on every pull request.
+
+---
+
+## 📚 API & Integrations
+
+- **REST reference:** `/api-docs` groups endpoints by domain with usage notes.
+- **Status dashboard:** `/status` returns structured health checks suitable for uptime monitors.
+- **Pagination:** Collection endpoints accept `page` & `per_page` parameters and respond with pagination metadata.
+- **Blog API:** `/blog/posts` exposes public stories while authenticated admins can create, publish, and delete entries.
+
+---
+
+## 🤝 Contribution Flow
+
+1. Create a feature branch: `git checkout -b feature/short-description`
+2. Commit with clear, conventional messages.
+3. Open a pull request describing the change and testing performed.
+4. Ensure CI passes and request review from a maintainer.
+
+We follow a lightweight Gitflow model and welcome issues/PRs that improve docs, tooling, or UX.
+
+---
+
+## 📄 License
+
+Released under the MIT License. See `LICENSE` for details.

@@ -38,7 +38,9 @@ export function Footer() {
       { name: 'Features', href: '#features' },
       { name: 'Topics', href: '#topics' },
       { name: 'Community', href: '#community' },
-      { name: 'Pricing', href: '#pricing' }
+      { name: 'FAQ', href: '/faq' },
+      { name: 'System Status', href: '/status' },
+      { name: 'API Docs', href: '/api-docs' }
     ],
     support: [
       { name: 'Help Center', href: '#help' },
@@ -48,7 +50,7 @@ export function Footer() {
     ],
     company: [
       { name: 'About Us', href: '/about' },
-      { name: 'Blog', href: '#blog' },
+      { name: 'Blog', href: '/blog' },
       { name: 'Careers', href: '#careers' },
       { name: 'Press', href: '#press' }
     ],

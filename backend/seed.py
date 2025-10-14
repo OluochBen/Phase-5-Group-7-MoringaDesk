@@ -4,8 +4,10 @@ Seed script for MoringaDesk database
 Run this script to populate the database with initial data
 """
 
+from datetime import datetime, timedelta
+
 from app import create_app, db
-from app.models import User, Tag, FAQ, Question, Solution
+from app.models import User, Tag, FAQ, Question, Solution, BlogPost
 import sys
 
 def seed_database():
@@ -176,6 +178,71 @@ def seed_database():
                     user_id=sol["user_id"]
                 ))
                 print(f"✓ Created solution for: {sol['question'].title}")
+
+        # --- Blog Posts ---
+        blog_posts = [
+            {
+                "slug": "welcome-to-moringadesk",
+                "title": "Welcome to MoringaDesk",
+                "excerpt": "How a simple idea grew into the knowledge base that keeps every cohort connected.",
+                "content": (
+                    "MoringaDesk began as a student-led initiative to preserve the best answers from our cohorts. "
+                    "Today it brings facilitators, alumni, and current learners together. In this post we share "
+                    "why we built it, how it works, and where the community is headed next.\n\n"
+                    "Expect regular posts with facilitation tips, alumni stories, product updates, and deep dives "
+                    "into how we support collaborative learning."
+                ),
+                "cover_image": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80",
+                "days_ago": 14,
+            },
+            {
+                "slug": "five-ways-to-get-answers-faster",
+                "title": "Five ways to get answers faster on MoringaDesk",
+                "excerpt": "Quick wins that help your peers and mentors spot tough questions and jump in quickly.",
+                "content": (
+                    "Getting a response quickly starts with how you ask. Include the problem statement, "
+                    "what you have tried, and any error messages. Tag your question with the relevant stack "
+                    "so the right people see it. And remember to mark accepted answers—doing so signals that "
+                    "solutions work and keeps our catalog tidy.\n\n"
+                    "In this guide we outline five habits that have helped cohorts resolve blockers in hours, not days."
+                ),
+                "cover_image": "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=1200&q=80",
+                "days_ago": 7,
+            },
+            {
+                "slug": "facilitator-spotlight-anne-w",
+                "title": "Facilitator spotlight: Anne W.",
+                "excerpt": "Meet Anne, a facilitator helping learners master debugging and pair programming.",
+                "content": (
+                    "Anne has guided dozens of Moringa cohorts through intense sprints. She shares why she leans "
+                    "on MoringaDesk to capture recurring blockers, how she encourages learners to document what they "
+                    "discover, and tips for keeping morale high.\n\n"
+                    "\"The more our students document, the faster the next cohort thrives,\" she says. "
+                    "Read on for her playbook."
+                ),
+                "cover_image": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=1200&q=80",
+                "days_ago": 3,
+            },
+        ]
+
+        for post in blog_posts:
+            existing_post = BlogPost.query.filter_by(slug=post["slug"]).first()
+            if existing_post:
+                continue
+
+            published_at = datetime.utcnow() - timedelta(days=post.get("days_ago", 0))
+            new_post = BlogPost(
+                title=post["title"],
+                slug=post["slug"],
+                excerpt=post["excerpt"],
+                content=post["content"],
+                cover_image=post.get("cover_image"),
+                status="published",
+                published_at=published_at,
+                author_id=admin_user.id,
+            )
+            db.session.add(new_post)
+            print(f"✓ Created blog post: {post['title']}")
 
         # --- Commit all changes ---
         db.session.commit()

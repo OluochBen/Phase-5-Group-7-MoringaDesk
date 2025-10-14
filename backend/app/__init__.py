@@ -81,6 +81,7 @@ def create_app():
     from .routes.notifications import notifications_bp
     from .routes.tags import tags_bp
     from .routes.profile import profile_bp
+    from .routes.blog import blog_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -91,6 +92,7 @@ def create_app():
     app.register_blueprint(notifications_bp, url_prefix="/notifications")
     app.register_blueprint(tags_bp, url_prefix="/tags")
     app.register_blueprint(profile_bp, url_prefix="/profile")
+    app.register_blueprint(blog_bp, url_prefix="/blog")
 
     # --- WebSocket events ---
     try:

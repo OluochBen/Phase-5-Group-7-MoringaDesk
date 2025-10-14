@@ -12,6 +12,7 @@ from .faq import FAQ
 from .password_reset_token import PasswordResetToken
 from .report import Report
 from .audit_log import AuditLog
+from .blog_post import BlogPost
 
 __all__ = [
     "User",
@@ -28,4 +29,5 @@ __all__ = [
     "PasswordResetToken",
     "Report",
     "AuditLog",
+    "BlogPost",
 ]

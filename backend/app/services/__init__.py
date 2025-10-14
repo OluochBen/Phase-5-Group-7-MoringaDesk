@@ -6,6 +6,7 @@ from .notification_service import NotificationService
 from .faq_service import FAQService
 from .websocket_service import WebSocketService
 from .admin_dashboard_service import AdminDashboardService
+from .blog_service import BlogService
 
 __all__ = [
     "AuthService",
@@ -16,4 +17,5 @@ __all__ = [
     "FAQService",
     "WebSocketService",
     "AdminDashboardService",
+    "BlogService",
 ]

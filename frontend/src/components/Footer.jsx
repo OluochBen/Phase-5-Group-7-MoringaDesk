@@ -38,7 +38,7 @@ export function Footer() {
       { name: 'Features', href: '#features' },
       { name: 'Topics', href: '#topics' },
       { name: 'Community', href: '#community' },
-      { name: 'Pricing', href: '#pricing' }
+      { name: 'FAQ', href: '/faq' }
     ],
     support: [
       { name: 'Help Center', href: '#help' },

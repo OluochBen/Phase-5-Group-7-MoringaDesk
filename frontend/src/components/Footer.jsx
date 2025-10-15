@@ -38,9 +38,7 @@ export function Footer() {
       { name: 'Features', href: '#features' },
       { name: 'Topics', href: '#topics' },
       { name: 'Community', href: '#community' },
-      { name: 'FAQ', href: '/faq' },
-      { name: 'System Status', href: '/status' },
-      { name: 'API Docs', href: '/api-docs' }
+      { name: 'FAQ', href: '/faq' }
     ],
     support: [
       { name: 'Help Center', href: '#help' },

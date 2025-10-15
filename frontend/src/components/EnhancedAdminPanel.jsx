@@ -18,6 +18,7 @@ import {
 
 import { adminApi } from "../services/api";
 import { AdminBlogManager } from "./AdminBlogManager";
+import { AdminFeedbackManager } from "./AdminFeedbackManager";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -439,6 +440,8 @@ export function EnhancedAdminPanel({ currentUser }) {
         </section>
 
         <AdminBlogManager />
+
+        <AdminFeedbackManager />
       </div>
 
       <aside className="space-y-6">

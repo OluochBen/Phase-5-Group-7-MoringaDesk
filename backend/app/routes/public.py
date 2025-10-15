@@ -1,12 +1,14 @@
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from .. import db
 from ..models import NewsletterSubscriber, Question, Solution, Tag, User
 from ..schemas import SubscriptionCreateSchema
+from ..services import FeedbackService
 
 public_bp = Blueprint("public", __name__)
 
@@ -120,3 +122,13 @@ def system_status():
         ),
         200,
     )
+
+
+@public_bp.route("/feedback", methods=["POST"])
+@jwt_required(optional=True)
+def submit_feedback():
+    """Allow learners and visitors to file bug reports or feature requests."""
+
+    user_id = get_jwt_identity()
+    payload, status = FeedbackService.create_feedback(request.get_json() or {}, user_id)
+    return jsonify(payload), status

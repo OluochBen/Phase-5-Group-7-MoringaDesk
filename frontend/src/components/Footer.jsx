@@ -38,15 +38,13 @@ export function Footer() {
       { name: 'Features', href: '#features' },
       { name: 'Topics', href: '#topics' },
       { name: 'Community', href: '#community' },
-      { name: 'FAQ', href: '/faq' },
-      { name: 'System Status', href: '/status' },
-      { name: 'API Docs', href: '/api-docs' }
+      { name: 'FAQ', href: '/faq' }
     ],
     support: [
       { name: 'Help Center', href: '#help' },
       { name: 'Contact Us', href: '/contact' },
-      { name: 'Bug Reports', href: '#bugs' },
-      { name: 'Feature Requests', href: '#requests' }
+      { name: 'Bug Reports', href: '/feedback?type=bug' },
+      { name: 'Feature Requests', href: '/feedback?type=feature' }
     ],
     company: [
       { name: 'About Us', href: '/about' },

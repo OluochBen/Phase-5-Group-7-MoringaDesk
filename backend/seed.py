@@ -7,7 +7,7 @@ Run this script to populate the database with initial data
 from datetime import datetime, timedelta
 
 from app import create_app, db
-from app.models import User, Tag, FAQ, Question, Solution, BlogPost
+from app.models import User, Tag, FAQ, Question, Solution, BlogPost, Feedback
 import sys
 
 def seed_database():
@@ -262,6 +262,41 @@ def seed_database():
             )
             db.session.add(new_post)
             print(f"✓ Created blog post: {post['title']}")
+
+        # --- Feedback samples ---
+        feedback_samples = [
+            {
+                "feedback_type": "bug",
+                "title": "Images fail to load on Safari",
+                "description": "Screenshots attached to questions sometimes fail to load on Safari 16.",
+                "priority": "high",
+                "status": "reviewing",
+                "contact_name": "Jane",
+                "contact_email": "jane@example.com",
+            },
+            {
+                "feedback_type": "feature",
+                "title": "Add dark mode",
+                "description": "It would be great to match IDE themes with a native dark mode option.",
+                "priority": "normal",
+                "status": "open",
+                "contact_name": "Ali",
+                "contact_email": "ali@example.com",
+            },
+        ]
+
+        for item in feedback_samples:
+            existing_feedback = Feedback.query.filter_by(title=item["title"]).first()
+            if existing_feedback:
+                existing_feedback.description = item["description"]
+                existing_feedback.priority = item["priority"]
+                existing_feedback.status = item["status"]
+                existing_feedback.contact_name = item.get("contact_name")
+                existing_feedback.contact_email = item.get("contact_email")
+                print(f"✓ Feedback already exists: {item['title']}")
+            else:
+                db.session.add(Feedback(**item))
+                print(f"✓ Created feedback entry: {item['title']}")
 
         # --- Commit all changes ---
         db.session.commit()

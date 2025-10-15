@@ -13,6 +13,7 @@ from .password_reset_token import PasswordResetToken
 from .report import Report
 from .audit_log import AuditLog
 from .blog_post import BlogPost
+from .feedback import Feedback
 
 __all__ = [
     "User",
@@ -30,4 +31,5 @@ __all__ = [
     "Report",
     "AuditLog",
     "BlogPost",
+    "Feedback",
 ]

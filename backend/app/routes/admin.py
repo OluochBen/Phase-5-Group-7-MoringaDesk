@@ -9,7 +9,7 @@ from ..models.solution import Solution
 from ..models.faq import FAQ
 from ..models.report import Report
 from ..models.audit_log import AuditLog
-from ..services import AdminDashboardService
+from ..services import AdminDashboardService, FeedbackService
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -238,3 +238,40 @@ def dismiss_report(report_id):
 def get_audit_logs():
     logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(50).all()
     return jsonify([log.to_dict() for log in logs]), 200
+
+
+# ---- Feedback ----
+@admin_bp.route("/feedback", methods=["GET"])
+@jwt_required()
+@admin_required
+def list_feedback():
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    feedback_type = request.args.get("type")
+    status = request.args.get("status")
+    priority = request.args.get("priority")
+
+    result = FeedbackService.list_feedback(
+        page=page,
+        per_page=per_page,
+        feedback_type=feedback_type,
+        status=status,
+        priority=priority,
+    )
+    return jsonify(result), 200
+
+
+@admin_bp.route("/feedback/<int:feedback_id>", methods=["PUT"])
+@jwt_required()
+@admin_required
+def update_feedback(feedback_id):
+    data = request.get_json() or {}
+    payload, status = FeedbackService.update_feedback(feedback_id, data)
+    return jsonify(payload), status
+
+
+@admin_bp.route("/feedback/stats", methods=["GET"])
+@jwt_required()
+@admin_required
+def feedback_stats():
+    return jsonify(FeedbackService.get_stats()), 200

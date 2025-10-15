@@ -7,6 +7,7 @@ from .faq_schema import FAQSchema, FAQCreateSchema
 from .notification_schema import NotificationSchema
 from .subscription_schema import SubscriptionCreateSchema
 from .blog_post_schema import BlogPostSchema, BlogPostCreateSchema
+from .feedback_schema import FeedbackSchema, FeedbackCreateSchema, FeedbackUpdateSchema
 
 __all__ = [
     'UserSchema', 'UserRegistrationSchema', 'UserLoginSchema',
@@ -17,5 +18,6 @@ __all__ = [
     'FAQSchema', 'FAQCreateSchema',
     'NotificationSchema',
     'SubscriptionCreateSchema',
-    'BlogPostSchema', 'BlogPostCreateSchema'
+    'BlogPostSchema', 'BlogPostCreateSchema',
+    'FeedbackSchema', 'FeedbackCreateSchema', 'FeedbackUpdateSchema'
 ]

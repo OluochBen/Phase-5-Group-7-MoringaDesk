@@ -55,6 +55,7 @@ MoringaDesk captures those questions and the best solutions in a single, API-fir
 ### Platform highlights
 - Fully documented REST API (`/api-docs`).
 - Live system status dashboard (`/status`).
+- Public feedback portal for bug reports and feature requests (`/feedback`).
 - Newsletter capture, public stats, and extensible service checks.
 
 ---

@@ -239,5 +239,36 @@ export const blogApi = {
   remove: (postId) => api.delete(`/blog/posts/${postId}`).then((r) => r.data),
 };
 
+export const feedbackApi = {
+  submit: ({ feedback_type, title, description, priority, contact_name, contact_email }) =>
+    api
+      .post("/feedback", {
+        feedback_type,
+        title,
+        description,
+        priority,
+        contact_name,
+        contact_email,
+      })
+      .then((r) => r.data),
+
+  list: ({ page = 1, per_page = 25, type, status, priority } = {}) =>
+    api
+      .get("/admin/feedback", {
+        params: {
+          page,
+          per_page,
+          type: type || undefined,
+          status: status || undefined,
+          priority: priority || undefined,
+        },
+      })
+      .then((r) => r.data),
+
+  update: (id, payload) => api.put(`/admin/feedback/${id}`, payload).then((r) => r.data),
+
+  stats: () => api.get("/admin/feedback/stats").then((r) => r.data),
+};
+
 // ✅ default axios instance
 export default api;

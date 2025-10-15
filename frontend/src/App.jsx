@@ -30,6 +30,7 @@ import { CodeOfConductPage } from "./pages/CodeOfConductPage";
 import { CommunityGuidelinesPage } from "./pages/GuidelinesPage";
 import { SystemStatusPage } from "./pages/SystemStatusPage";
 import { ApiDocsPage } from "./pages/ApiDocsPage";
+import { FeedbackPage } from "./pages/FeedbackPage";
 import { BlogListPage } from "./pages/BlogListPage";
 import { BlogPostPage } from "./pages/BlogPostPage";
 
@@ -186,6 +187,7 @@ export default function App() {
           <Route path="/guidelines" element={<CommunityGuidelinesPage />} />
           <Route path="/status" element={<SystemStatusPage />} />
           <Route path="/api-docs" element={<ApiDocsPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/blog" element={<BlogListPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
 
